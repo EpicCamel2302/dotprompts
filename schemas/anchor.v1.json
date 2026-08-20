@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dot-prompts.dev/schemas/anchor/v1.json",
+  "title": "Hashline Anchor",
+  "description": "A hashline LINE#HASH reference identifying a specific line of content.",
+  "type": "object",
+  "required": ["line", "hash"],
+  "additionalProperties": false,
+  "properties": {
+    "line": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "1-indexed line number"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{2,4}$",
+      "description": "2-4 character lowercase hex content hash of the line"
+    }
+  }
+}

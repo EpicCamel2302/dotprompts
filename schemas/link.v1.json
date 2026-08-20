@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dot-prompts.dev/schemas/link/v1.json",
+  "title": "Provenance Link",
+  "description": "A typed link identifying where an edit applied. Extensible via additionalProperties.",
+  "oneOf": [
+    { "$ref": "#/$defs/fileLink" },
+    { "$ref": "#/$defs/regionLink" },
+    { "$ref": "#/$defs/gitLink" },
+    { "$ref": "#/$defs/symbolLink" },
+    { "$ref": "#/$defs/hashlineLink" }
+  ],
+  "$defs": {
+    "fileLink": {
+      "type": "object",
+      "required": ["type", "path"],
+      "properties": {
+        "type": { "const": "file" },
+        "path": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true
+    },
+    "regionLink": {
+      "type": "object",
+      "required": ["type", "path", "startLine", "endLine"],
+      "properties": {
+        "type": { "const": "region" },
+        "path": { "type": "string", "minLength": 1 },
+        "startLine": { "type": "integer", "minimum": 1 },
+        "endLine": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": true
+    },
+    "gitLink": {
+      "type": "object",
+      "required": ["type", "path", "commit"],
+      "properties": {
+        "type": { "const": "git" },
+        "path": { "type": "string", "minLength": 1 },
+        "commit": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true
+    },
+    "symbolLink": {
+      "type": "object",
+      "required": ["type", "path", "name"],
+      "properties": {
+        "type": { "const": "symbol" },
+        "path": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "kind": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "hashlineLink": {
+      "type": "object",
+      "required": ["type", "path", "line", "hash"],
+      "properties": {
+        "type": { "const": "hashline" },
+        "path": { "type": "string", "minLength": 1 },
+        "line": { "type": "integer", "minimum": 1 },
+        "hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{2,4}$"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

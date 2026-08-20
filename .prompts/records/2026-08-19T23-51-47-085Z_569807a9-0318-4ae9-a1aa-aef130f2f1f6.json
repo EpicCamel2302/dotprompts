@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "id": "569807a9-0318-4ae9-a1aa-aef130f2f1f6",
+  "timestamp": "2026-08-19T23:51:47.085Z",
+  "model": "openrouter/deepseek/deepseek-v4-flash-0731",
+  "prompt": "Simplify examples/footgun/fetch.ts — remove unnecessary complexity from the fetch logic.",
+  "targets": [
+    {
+      "path": "examples/footgun/fetch.ts",
+      "links": [
+        {
+          "type": "file",
+          "path": "examples/footgun/fetch.ts"
+        },
+        {
+          "type": "region",
+          "path": "examples/footgun/fetch.ts",
+          "startLine": 9,
+          "endLine": 26
+        },
+        {
+          "type": "symbol",
+          "path": "examples/footgun/fetch.ts",
+          "name": "MAX_RETRIES",
+          "kind": "const"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "harness": "pi",
+    "tool": "edit"
+  }
+}
