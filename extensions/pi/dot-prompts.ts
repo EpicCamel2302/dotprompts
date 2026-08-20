@@ -1,7 +1,7 @@
 /**
  * dot-prompts pi extension
  *
- * - Auto-records provenance after edit/write tool calls (with pi session metadata)
+ * - Auto-records provenance once per agent generation (buffers edit/write, flushes on agent_end)
  * - Appends [dot-prompts] notices to read tool results
  * - Registers prompts_read, prompts_chain, and prompts_trace for opt-in context fetch
  * - Slash commands: /prompts history <file>
@@ -16,6 +16,7 @@ import { resolve } from "node:path";
 import { Type, type TSchema } from "@sinclair/typebox";
 import {
   TOOL_CATALOG,
+  GenerationRecordBuffer,
   extractLinksFromEdit,
   extractLinksFromWrite,
   formatLookupNotice,
@@ -41,6 +42,8 @@ let currentModel = "unknown";
 const contentBeforeEdit = new Map<string, string>();
 /** Record ids fetched via prompts_read / prompts_trace this user turn. */
 const referencedRecordIds = new Set<string>();
+const generationBuffer = new GenerationRecordBuffer();
+let lastAgentCtx: Parameters<Parameters<ExtensionAPI["on"]>[1]>[1] | null = null;
 
 function noteReferencedRecords(...ids: Array<string | undefined>): void {
   for (const id of ids) {
@@ -74,20 +77,49 @@ function modelSlug(ctx: { model?: { provider?: string; id?: string } }): string 
 function buildRecordMetadata(
   ctx: Parameters<Parameters<ExtensionAPI["on"]>[1]>[1],
   tool: "edit" | "write",
-  toolCallId: string,
+  toolCallIds: string[],
+  tools: Array<"edit" | "write">,
 ) {
+  const lastToolCallId = toolCallIds[toolCallIds.length - 1] ?? "";
   const pi = capturePiMetadata(
     ctx.sessionManager,
-    toolCallId,
+    lastToolCallId,
     currentUserMessageId,
   );
+  if (toolCallIds.length > 1) {
+    (pi as { toolCallIds?: string[] }).toolCallIds = [...toolCallIds];
+  }
   const refs = [...referencedRecordIds];
   return {
     harness: "pi",
     tool,
+    ...(tools.length > 1 ? { tools } : {}),
     pi,
     ...(refs.length > 0 ? { referencedRecords: refs } : {}),
   };
+}
+
+function flushGenerationRecord(
+  ctx: Parameters<Parameters<ExtensionAPI["on"]>[1]>[1],
+): void {
+  const snap = generationBuffer.snapshot();
+  generationBuffer.clear();
+  if (!snap || isHistorySummarizePrompt(snap.prompt)) {
+    return;
+  }
+  const lastTool = snap.tools[snap.tools.length - 1] ?? "edit";
+  record(
+    {
+      model: snap.model,
+      prompt: snap.prompt,
+      targets: snap.targets,
+      metadata: buildRecordMetadata(ctx, lastTool, snap.toolCallIds, snap.tools),
+    },
+    {
+      filePath: snap.firstFilePath,
+      cwd: ctx.cwd,
+    },
+  );
 }
 
 export function registerDotPromptsExtension(pi: ExtensionAPI): void {
@@ -100,6 +132,8 @@ export function registerDotPromptsExtension(pi: ExtensionAPI): void {
   pi.on("agent_start", async (_event, ctx) => {
     referencedRecordIds.clear();
     contentBeforeEdit.clear();
+    generationBuffer.clear();
+    lastAgentCtx = ctx;
     currentModel = modelSlug(ctx);
     currentUserMessageId = findLatestUserMessageId(
       ctx.sessionManager,
@@ -150,15 +184,15 @@ export function registerDotPromptsExtension(pi: ExtensionAPI): void {
         contentBefore: before,
       });
 
-      record(
-        {
-          model: modelSlug(ctx),
-          prompt: currentPrompt,
-          targets: [target],
-          metadata: buildRecordMetadata(ctx, "edit", event.toolCallId),
-        },
-        { filePath: absolutePath, cwd: ctx.cwd },
-      );
+      lastAgentCtx = ctx;
+      generationBuffer.add({
+        model: modelSlug(ctx),
+        prompt: currentPrompt,
+        tool: "edit",
+        toolCallId: event.toolCallId,
+        target,
+        filePath: absolutePath,
+      });
       return;
     }
 
@@ -174,15 +208,15 @@ export function registerDotPromptsExtension(pi: ExtensionAPI): void {
         lineCount,
       });
 
-      record(
-        {
-          model: modelSlug(ctx),
-          prompt: currentPrompt,
-          targets: [target],
-          metadata: buildRecordMetadata(ctx, "write", event.toolCallId),
-        },
-        { filePath: absolutePath, cwd: ctx.cwd },
-      );
+      lastAgentCtx = ctx;
+      generationBuffer.add({
+        model: modelSlug(ctx),
+        prompt: currentPrompt,
+        tool: "write",
+        toolCallId: event.toolCallId,
+        target,
+        filePath: absolutePath,
+      });
       return;
     }
 
@@ -218,6 +252,21 @@ export function registerDotPromptsExtension(pi: ExtensionAPI): void {
       return {
         content: [{ type: "text", text: `${existingText}\n\n${notice}` }],
       };
+    }
+  });
+
+
+  pi.on("agent_end", async (_event, ctx) => {
+    lastAgentCtx = ctx;
+    flushGenerationRecord(ctx);
+  });
+
+  pi.on("session_shutdown", async (_event, ctx) => {
+    const flushCtx = ctx ?? lastAgentCtx;
+    if (flushCtx) {
+      flushGenerationRecord(flushCtx);
+    } else {
+      generationBuffer.clear();
     }
   });
 

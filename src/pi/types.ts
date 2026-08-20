@@ -4,6 +4,8 @@ export type PiSessionMetadata = {
   sessionFile?: string;
   userMessageId?: string;
   toolCallId?: string;
+  /** All tool call ids for edits/writes in this generation (last is also toolCallId). */
+  toolCallIds?: string[];
   leafId?: string;
 };
 

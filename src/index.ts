@@ -1,5 +1,15 @@
 export { record, buildRecord } from "./core/record.js";
 export {
+  GenerationRecordBuffer,
+  normalizeTargetPath,
+  upsertTargetByPath,
+} from "./core/generation-buffer.js";
+export type {
+  GenerationBufferEntry,
+  GenerationBufferSnapshot,
+  GenerationTool,
+} from "./core/generation-buffer.js";
+export {
   chain,
   context,
   get,
