@@ -35,6 +35,25 @@ feat!: drop path from links; path lives on target only
 
 Prefer squash-merging PRs with a conventional title so one clear commit lands on `main`.
 
+## Enforcement
+
+| Layer | Role |
+|---|---|
+| [AGENTS.md](../../AGENTS.md) + `.cursor/rules/conventional-commits.mdc` | Guide coding agents |
+| [PR title](../../.github/workflows/pr-title.yml) workflow | Fail PRs whose title is not Conventional Commits |
+| GitHub repo settings | Squash-only merges + require the PR title check on `main` |
+
+### GitHub settings (one-time)
+
+1. **Settings → General → Pull Requests**
+   - Enable **Allow squash merging**; set default squash commit to **Pull request title** (or “Pull request title and description”).
+   - Disable **Allow merge commits** and **Allow rebase merging** (optional but recommended so only squash lands on `main`).
+2. **Settings → Branches → Branch protection rules** → rule for `main` (or “Rulesets” → new ruleset targeting `main`):
+   - Require a pull request before merging.
+   - Require status checks to pass; add **PR title / lint** (the job name from the PR title workflow, often `lint` under workflow `PR title`).
+   - Do not allow bypassing the check for admins if you want it strict.
+3. Open a test PR with a bad title (`Update stuff`) and confirm the check fails; rename to `ci: …` or `feat: …` and confirm it passes.
+
 ## Bootstrapping
 
 The manifest is seeded at **0.2.0** (current `package.json`). After this lands on `main`, create a matching tag once so history is clear:

@@ -37,7 +37,19 @@ Details: [docs/development/architecture.md](docs/development/architecture.md). H
 - **One npm package.** Subpath exports (`dot-prompts`, `dot-prompts/mcp`, `dot-prompts/pi`) are the boundary. Do not add workspaces, a harness plugin registry, or a second storage backend unless the user asks.
 - **Tests:** core in `test/`; pi extension in `extensions/pi/test/`.
 
-When user-facing behavior changes, update [docs/usage](docs/usage/README.md). When internals or the library API change, update [docs/development](docs/development/README.md) and prefer Conventional Commit messages (`feat:`, `fix:`, …) so [release-please](docs/development/releasing.md) can cut the next version. Versioned changelog sections are owned by release-please; see [CHANGELOG.md](CHANGELOG.md) for history.
+When user-facing behavior changes, update [docs/usage](docs/usage/README.md). When internals or the library API change, update [docs/development](docs/development/README.md). Versioned changelog sections are owned by release-please; see [CHANGELOG.md](CHANGELOG.md) and [releasing](docs/development/releasing.md).
+
+## Pull requests and commits
+
+release-please versions from **Conventional Commit** messages that land on `main`. Prefer **squash merge** so the PR title becomes that commit.
+
+- **PR title** must match Conventional Commits, e.g. `feat: …`, `fix: …`, `ci: …`, `docs: …`.
+- Prefer **squash merge** so the PR title becomes that commit. CI fails non-conventional titles.
+- Use `feat!:` / `fix!:` (or a `BREAKING CHANGE:` footer) for breaking changes.
+- `feat` / `fix` / breaking drive a Release PR; `docs` / `chore` / `test` / `ci` usually do not.
+- Do **not** use vague titles (`Update stuff`) or rely on GitHub’s default `Merge pull request #N` message.
+
+Examples: `feat: walk up from file path to resolve .prompts store`, `fix: silence git stderr in non-git fixtures`.
 
 ## Commands
 
