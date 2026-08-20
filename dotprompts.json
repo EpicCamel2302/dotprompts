@@ -1,0 +1,7 @@
+{
+  "$schema": "./schemas/config.v1.json",
+  "version": 1,
+  "storage": {
+    "driver": "jsonl"
+  }
+}
