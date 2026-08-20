@@ -2,12 +2,12 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { record } from "../src/core/record.js";
+import { handlePromptsTrace } from "../src/pi/handlers.js";
 import {
   handlePromptsChain,
   handlePromptsRead,
-  handlePromptsTrace,
 } from "../src/tools/handlers.js";
-import { record } from "../src/record.js";
 
 describe("tool handlers", () => {
   let promptsDir: string;
@@ -126,19 +126,24 @@ describe("tool handlers", () => {
     expect(result.text).toContain("No dot-prompts record found");
     expect(result.details.found).toBe(false);
   });
-});
 
-describe("resolvePromptsDirFromEnv", () => {
-  it("reads --prompts-dir and DOT_PROMPTS_DIR", async () => {
-    const { resolvePromptsDirFromEnv } = await import("../src/mcp/server.js");
-    expect(resolvePromptsDirFromEnv(["--prompts-dir", "/tmp/a"], {})).toBe(
-      "/tmp/a",
+  it("notifies onReadRecords for successful lookups", () => {
+    record(
+      {
+        model: "test",
+        prompt: "Keep retry count at 3",
+        targets: [
+          { path: "fetch.ts", links: [{ type: "file", path: "fetch.ts" }] },
+        ],
+      },
+      { promptsDir },
     );
-    expect(
-      resolvePromptsDirFromEnv(["--prompts-dir=/tmp/b"], {}),
-    ).toBe("/tmp/b");
-    expect(
-      resolvePromptsDirFromEnv([], { DOT_PROMPTS_DIR: "/tmp/c" }),
-    ).toBe("/tmp/c");
+
+    const seen: string[] = [];
+    handlePromptsRead(
+      { path: "fetch.ts" },
+      { promptsDir, onReadRecords: (ids) => seen.push(...ids) },
+    );
+    expect(seen).toHaveLength(1);
   });
 });

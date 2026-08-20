@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { appendRecord } from "./storage.js";
+import { resolveStorage, type StoreOptions } from "./storage.js";
 import type { PromptRecord, RecordInput } from "./types.js";
 import { validateRecord } from "./validate.js";
 
@@ -20,9 +20,9 @@ export function buildRecord(input: RecordInput): PromptRecord {
 
 export function record(
   input: RecordInput,
-  opts?: { promptsDir?: string },
+  opts?: StoreOptions,
 ): PromptRecord {
   const built = buildRecord(input);
-  appendRecord(built, opts?.promptsDir);
+  resolveStorage(opts).append(built);
   return built;
 }

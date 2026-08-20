@@ -1,22 +1,20 @@
+import { get } from "../core/query.js";
+import type { StoreOptions } from "../core/storage.js";
+import { formatLookupForAgent } from "../links/extract.js";
 import {
   collectProvenanceChain,
   formatProvenanceChainForAgent,
 } from "../provenance/chain.js";
-import { formatLookupForAgent } from "../links/extract.js";
-import {
-  formatRecordOnlyFallback,
-  getPiMetadata,
-  tracePiSession,
-} from "../pi/trace.js";
-import { get, lookup } from "../query.js";
+import { lookup } from "../core/query.js";
+import { formatRecordFallback, toolErrorText } from "./format.js";
 
 export type ToolHandlerResult = {
   text: string;
   details: Record<string, unknown>;
 };
 
-export type ToolHandlerOptions = {
-  promptsDir?: string;
+export type ToolHandlerOptions = StoreOptions & {
+  onReadRecords?: (ids: string[]) => void;
 };
 
 export type PromptsReadParams = {
@@ -33,20 +31,14 @@ export type PromptsChainParams = {
   maxRecords?: number;
 };
 
-export type PromptsTraceParams = {
-  recordId?: string;
-  sessionFile?: string;
-  userMessageId?: string;
-  maxEntries?: number;
-};
-
-function errorText(toolName: string, error: unknown, extra?: string): string {
-  const message = error instanceof Error ? error.message : String(error);
-  return [
-    `${toolName} failed internally (${message}).`,
-    extra ??
-      "Use prompts_read for portable prompt text, or read `.prompts/records/` if you already have a record id.",
-  ].join("\n");
+function noteRecords(
+  opts: ToolHandlerOptions,
+  ids: Array<string | undefined>,
+): void {
+  const clean = ids.filter((id): id is string => Boolean(id));
+  if (clean.length > 0) {
+    opts.onReadRecords?.(clean);
+  }
 }
 
 export function handlePromptsRead(
@@ -63,21 +55,26 @@ export function handlePromptsRead(
       },
       {
         promptsDir: opts.promptsDir,
+        storage: opts.storage,
+        cwd: opts.cwd,
         limit: params.limit ?? 5,
         minConfidence: 0.4,
       },
     );
 
+    const recordIds = result.matches.map((match) => match.record.id);
+    noteRecords(opts, recordIds);
+
     return {
       text: formatLookupForAgent(result.matches),
       details: {
         matches: result.matches,
-        recordIds: result.matches.map((match) => match.record.id),
+        recordIds,
       },
     };
   } catch (error) {
     return {
-      text: errorText("prompts_read", error),
+      text: toolErrorText("prompts_read", error),
       details: {
         error: true,
         tool: "prompts_read",
@@ -94,6 +91,8 @@ export function handlePromptsChain(
   try {
     const result = collectProvenanceChain([params.recordId], {
       promptsDir: opts.promptsDir,
+      storage: opts.storage,
+      cwd: opts.cwd,
       maxDepth: params.maxDepth,
       maxRecords: params.maxRecords,
     });
@@ -105,18 +104,22 @@ export function handlePromptsChain(
       };
     }
 
+    const recordIds = result.entries.map((entry) => entry.record.id);
+    noteRecords(opts, recordIds);
+
     return {
       text: formatProvenanceChainForAgent(result),
       details: {
         ...result,
-        recordIds: result.entries.map((entry) => entry.record.id),
+        recordIds,
       },
     };
   } catch (error) {
-    const stored = get(params.recordId, { promptsDir: opts.promptsDir });
+    const stored = get(params.recordId, opts);
     if (stored) {
+      noteRecords(opts, [stored.id]);
       return {
-        text: formatRecordOnlyFallback({
+        text: formatRecordFallback({
           prompt: stored.prompt,
           timestamp: stored.timestamp,
           model: stored.model,
@@ -134,79 +137,11 @@ export function handlePromptsChain(
     }
 
     return {
-      text: errorText("prompts_chain", error),
+      text: toolErrorText("prompts_chain", error),
       details: {
         error: true,
         tool: "prompts_chain",
         message: error instanceof Error ? error.message : String(error),
-      },
-    };
-  }
-}
-
-export function handlePromptsTrace(
-  params: PromptsTraceParams,
-  opts: ToolHandlerOptions = {},
-): ToolHandlerResult {
-  let sessionFile = params.sessionFile;
-  let userMessageId = params.userMessageId;
-  let prompt: string | undefined;
-  let timestamp: string | undefined;
-  let model: string | undefined;
-  let recordId = params.recordId;
-
-  try {
-    if (params.recordId) {
-      const stored = get(params.recordId, { promptsDir: opts.promptsDir });
-      if (!stored) {
-        return {
-          text: `No dot-prompts record found for id ${params.recordId}.`,
-          details: { found: false },
-        };
-      }
-
-      prompt = stored.prompt;
-      timestamp = stored.timestamp;
-      model = stored.model;
-      const piMeta = getPiMetadata(stored.metadata);
-      sessionFile = sessionFile ?? piMeta?.sessionFile;
-      userMessageId = userMessageId ?? piMeta?.userMessageId;
-      recordId = stored.id;
-    }
-
-    const trace = tracePiSession({
-      sessionFile,
-      userMessageId,
-      prompt,
-      timestamp,
-      model,
-      recordId,
-      maxEntries: params.maxEntries,
-    });
-
-    return {
-      text: trace.text,
-      details: {
-        ...trace,
-        ...(recordId ? { recordIds: [recordId] } : {}),
-      },
-    };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return {
-      text: formatRecordOnlyFallback({
-        prompt,
-        timestamp,
-        model,
-        recordId,
-        sessionFile,
-        reason: `prompts_trace could not load the pi session (${message}). Portable prompt text from .prompts/ is shown instead.`,
-      }),
-      details: {
-        error: true,
-        tool: "prompts_trace",
-        message,
-        ...(recordId ? { recordIds: [recordId] } : {}),
       },
     };
   }

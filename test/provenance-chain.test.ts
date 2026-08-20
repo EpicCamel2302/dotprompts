@@ -8,8 +8,8 @@ import {
   formatProvenanceChainForAgent,
   getReferencedRecordIds,
 } from "../src/provenance/chain.js";
-import { chain } from "../src/query.js";
-import { record } from "../src/record.js";
+import { chain } from "../src/core/query.js";
+import { record } from "../src/core/record.js";
 
 describe("provenance chain", () => {
   let promptsDir: string;

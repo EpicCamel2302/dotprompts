@@ -2,22 +2,23 @@
 
 import { Command } from "commander";
 import { readFileSync } from "node:fs";
-import { annotateFile } from "./hashline.js";
-import { record } from "./record.js";
-import { context, get, list, lookup, chain } from "./query.js";
+import { annotateFile } from "./core/hashline.js";
+import { record } from "./core/record.js";
+import { context, get, list, lookup, chain } from "./core/query.js";
+import { resolvePromptsDir } from "./core/prompts-dir.js";
 import { formatProvenanceChainForAgent } from "./provenance/chain.js";
-import type { LookupQuery, RecordInput } from "./types.js";
-import { ValidationError } from "./validate.js";
+import type { LookupQuery, RecordInput } from "./core/types.js";
+import { ValidationError } from "./core/validate.js";
 
 const program = new Command();
 
 program
   .name("dot-prompts")
   .description("Provenance and observability for LLM-generated code edits")
-  .option("--prompts-dir <path>", "Path to .prompts directory", ".prompts");
+  .option("--prompts-dir <path>", "Path to .prompts directory");
 
 function getPromptsDir(cmd: Command): string {
-  return cmd.optsWithGlobals().promptsDir as string;
+  return resolvePromptsDir(cmd.optsWithGlobals().promptsDir as string | undefined);
 }
 
 function outputJson(value: unknown): void {
@@ -68,14 +69,14 @@ program
 
 program
   .command("lookup")
-  .description("Find prior prompts by file, region, symbol, or hashline")
+  .description("Find prior prompts by file, region, or symbol")
   .requiredOption("--path <path>", "File path to match")
   .option("--start-line <n>", "Start of query region (1-indexed)", parseInt)
   .option("--end-line <n>", "End of query region (1-indexed)", parseInt)
   .option("--symbol <name>", "Symbol name to match")
   .option(
     "--hashline <json>",
-    'Hashline anchor JSON, e.g. \'{"line":42,"hash":"f1"}\'',
+    'Optional hashline anchor JSON, e.g. \'{"line":42,"hash":"f1"}\'',
   )
   .option("--limit <n>", "Maximum matches to return", parseInt)
   .option("--min-confidence <n>", "Minimum confidence threshold", parseFloat)
@@ -110,7 +111,7 @@ program
 
 program
   .command("read")
-  .description("Annotate a file with hashline anchors")
+  .description("Annotate a file with optional hashline anchors (LINE#HASH)")
   .argument("<path>", "File path to read")
   .option("--format <format>", "Output format: json or human", "json")
   .action((filePath, _, cmd) => {

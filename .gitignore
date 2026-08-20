@@ -1,5 +1,20 @@
+# dependencies
 node_modules/
+
+# build
 dist/
+*.tsbuildinfo
+
+# logs and write leftovers
 *.log
+*.tmp
+
+# secrets
+.env
+.env.*
+
+# os / editors
 .DS_Store
-.cursor
+Thumbs.db
+.idea/
+.cursor/

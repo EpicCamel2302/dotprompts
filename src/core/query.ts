@@ -1,12 +1,11 @@
-import { getRecordById, readAllRecords } from "./storage.js";
+import { resolveStorage, type StoreOptions } from "./storage.js";
 import {
   collectProvenanceChain,
   type ProvenanceChainResult,
-} from "./provenance/chain.js";
+} from "../provenance/chain.js";
 import type {
   ContextOptions,
   ContextSummary,
-  HashlineLink,
   Link,
   ListOptions,
   LookupMatch,
@@ -14,9 +13,10 @@ import type {
   LookupQuery,
   LookupResult,
   PromptRecord,
-  RegionLink,
-  SymbolLink,
 } from "./types.js";
+
+export type QueryOptions = ListOptions & StoreOptions;
+export type LookupStoreOptions = LookupOptions & StoreOptions;
 
 function normalizePath(path: string): string {
   return path.replace(/\\/g, "/");
@@ -51,8 +51,9 @@ function sortByTimestampDesc(records: PromptRecord[]): PromptRecord[] {
   return [...records].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 }
 
-export function list(opts: ListOptions = {}): PromptRecord[] {
-  const filtered = readAllRecords(opts.promptsDir).filter((record) =>
+export function list(opts: QueryOptions = {}): PromptRecord[] {
+  const storage = resolveStorage(opts);
+  const filtered = storage.list().filter((record) =>
     recordMatchesFilters(record, opts),
   );
   const sorted = sortByTimestampDesc(filtered);
@@ -62,8 +63,11 @@ export function list(opts: ListOptions = {}): PromptRecord[] {
   return sorted;
 }
 
-export function get(id: string, opts?: { promptsDir?: string }): PromptRecord | null {
-  return getRecordById(id, opts?.promptsDir);
+export function get(
+  id: string,
+  opts?: StoreOptions,
+): PromptRecord | null {
+  return resolveStorage(opts).getById(id);
 }
 
 function regionsOverlap(
@@ -133,11 +137,11 @@ function scoreLink(
 
 export function lookup(
   query: LookupQuery,
-  opts: LookupOptions = {},
+  opts: LookupStoreOptions = {},
 ): LookupResult {
   const minConfidence = opts.minConfidence ?? 0.4;
   const limit = opts.limit ?? 5;
-  const records = sortByTimestampDesc(readAllRecords(opts.promptsDir));
+  const records = sortByTimestampDesc(resolveStorage(opts).list());
   const matches: LookupMatch[] = [];
 
   for (const record of records) {
@@ -185,7 +189,7 @@ export function lookup(
   return { matches: matches.slice(0, limit) };
 }
 
-export function context(opts: ContextOptions = {}): ContextSummary {
+export function context(opts: ContextOptions & StoreOptions = {}): ContextSummary {
   const records = list(opts);
   return {
     records: records.map((record) => ({
@@ -206,15 +210,14 @@ export function lookupForReadRange(
   path: string,
   offset?: number,
   limit?: number,
-  opts?: LookupOptions,
+  opts?: LookupStoreOptions,
 ): LookupResult {
   const startLine = offset ?? 1;
   const endLine = limit !== undefined ? startLine + limit - 1 : startLine + 9999;
   return lookup({ path, startLine, endLine }, opts);
 }
 
-export type ChainOptions = {
-  promptsDir?: string;
+export type ChainOptions = StoreOptions & {
   maxDepth?: number;
   maxRecords?: number;
 };
@@ -226,5 +229,3 @@ export function chain(
   const ids = Array.isArray(recordIds) ? recordIds : [recordIds];
   return collectProvenanceChain(ids, opts);
 }
-
-export type { RegionLink, SymbolLink, HashlineLink };

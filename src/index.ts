@@ -1,4 +1,4 @@
-export { record, buildRecord } from "./record.js";
+export { record, buildRecord } from "./core/record.js";
 export {
   chain,
   context,
@@ -6,8 +6,8 @@ export {
   list,
   lookup,
   lookupForReadRange,
-} from "./query.js";
-export type { ChainOptions } from "./query.js";
+} from "./core/query.js";
+export type { ChainOptions, QueryOptions, LookupStoreOptions } from "./core/query.js";
 export {
   annotateContent,
   annotateFile,
@@ -15,7 +15,23 @@ export {
   resolveAnchor,
   sha256Content,
   sha256File,
-} from "./hashline.js";
+} from "./core/hashline.js";
+export {
+  createJsonlStorage,
+  JsonlStorage,
+  resolveStorage,
+  HISTORY_FILE,
+  RECORDS_DIR,
+} from "./core/storage.js";
+export type { Storage, StoreOptions } from "./core/storage.js";
+export {
+  PROMPTS_DIR_ENV,
+  PROMPTS_DIR_NAME,
+  resolvePromptsDir,
+  resolvePromptsDirFromEnv,
+} from "./core/prompts-dir.js";
+export { getHarnessSessionPointers } from "./core/metadata.js";
+export type { HarnessSessionPointers } from "./core/metadata.js";
 export {
   extractLinksFromEdit,
   extractLinksFromWrite,
@@ -40,37 +56,16 @@ export type {
   ProvenanceChainOptions,
   ProvenanceChainResult,
 } from "./provenance/chain.js";
-export {
-  formatRecordOnlyFallback,
-  getPiMetadata,
-  loadPiSessionEntries,
-  parsePiSessionFile,
-  tracePiSession,
-} from "./pi/trace.js";
-export type {
-  PiSessionMetadata,
-  PiSessionEntry,
-  PiTraceResult,
-} from "./pi/types.js";
-export {
-  createDotPromptsMcpServer,
-  resolvePromptsDirFromEnv,
-  startDotPromptsMcpServer,
-} from "./mcp/server.js";
-export type { McpServerOptions } from "./mcp/server.js";
-export {
-  handlePromptsChain,
-  handlePromptsRead,
-  handlePromptsTrace,
-} from "./tools/handlers.js";
+export { TOOL_CATALOG } from "./tools/catalog.js";
+export type { ToolName, ToolParam, ToolSpec } from "./tools/catalog.js";
+export { handlePromptsChain, handlePromptsRead } from "./tools/handlers.js";
 export type {
   PromptsChainParams,
   PromptsReadParams,
-  PromptsTraceParams,
   ToolHandlerOptions,
   ToolHandlerResult,
 } from "./tools/handlers.js";
-export { ValidationError } from "./validate.js";
+export { ValidationError } from "./core/validate.js";
 export type {
   ContextOptions,
   ContextSummary,
@@ -89,4 +84,4 @@ export type {
   ResolvedAnchor,
   SymbolLink,
   Target,
-} from "./types.js";
+} from "./core/types.js";

@@ -1,3 +1,4 @@
+import { formatRecordFallback } from "../tools/format.js";
 import { existsSync, readFileSync } from "node:fs";
 import type { PiSessionEntry, PiTraceResult } from "./types.js";
 
@@ -168,38 +169,22 @@ export function formatRecordOnlyFallback(opts: {
   sessionFile?: string;
   reason: string;
 }): string {
-  const lines = [
-    "Session trace unavailable locally.",
-    `Reason: ${opts.reason}`,
-    "",
-    "Record fallback:",
-  ];
-
-  if (opts.recordId) {
-    lines.push(`- record id: ${opts.recordId}`);
-  }
-  if (opts.timestamp) {
-    lines.push(`- timestamp: ${opts.timestamp}`);
-  }
-  if (opts.model) {
-    lines.push(`- model: ${opts.model}`);
-  }
+  const extraLines: string[] = [];
   if (opts.sessionId) {
-    lines.push(`- pi session id: ${opts.sessionId}`);
+    extraLines.push(`- pi session id: ${opts.sessionId}`);
   }
   if (opts.sessionFile) {
-    lines.push(`- pi session file (missing): ${opts.sessionFile}`);
-  }
-  if (opts.prompt) {
-    lines.push("", "Prompt text:", opts.prompt);
+    extraLines.push(`- pi session file (missing): ${opts.sessionFile}`);
   }
 
-  lines.push(
-    "",
-    "The stored prompt is the portable provenance. Full pi session history is only available on the machine where the session file exists.",
-  );
-
-  return lines.join("\n");
+  return formatRecordFallback({
+    prompt: opts.prompt,
+    timestamp: opts.timestamp,
+    model: opts.model,
+    recordId: opts.recordId,
+    reason: opts.reason,
+    extraLines,
+  });
 }
 
 export function tracePiSession(opts: TracePiSessionOptions): PiTraceResult {

@@ -3,9 +3,6 @@ export type HashlineAnchor = {
   hash: string;
 };
 
-/** @deprecated Use HashlineAnchor */
-export type Anchor = HashlineAnchor;
-
 export type FileLink = {
   type: "file";
   path: string;
