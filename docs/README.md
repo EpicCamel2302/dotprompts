@@ -23,6 +23,7 @@ For building on this codebase (library API, harnesses, internals).
 |---|---|
 | [Architecture](development/architecture.md) | Layout, storage, tools, conventions |
 | [Harnesses](development/harness.md) | Recording, notices, and opt-in tools |
+| [Releasing](development/releasing.md) | release-please and Conventional Commits |
 
 Coding agents working in this repository: [AGENTS.md](../AGENTS.md).
 

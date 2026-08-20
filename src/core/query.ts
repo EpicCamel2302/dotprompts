@@ -83,24 +83,17 @@ function scoreLink(
   link: Link,
   query: LookupQuery,
 ): { confidence: number; stale?: boolean } | null {
-  const queryPath = normalizePath(query.path);
-
-  if (link.type === "file" && normalizePath(link.path) === queryPath) {
+  // Caller already matched query.path to target.path.
+  if (link.type === "file") {
     return { confidence: 0.4 };
   }
 
-  if (
-    link.type === "symbol" &&
-    normalizePath(link.path) === queryPath &&
-    query.symbol &&
-    link.name === query.symbol
-  ) {
+  if (link.type === "symbol" && query.symbol && link.name === query.symbol) {
     return { confidence: 0.9 };
   }
 
   if (
     link.type === "region" &&
-    normalizePath(link.path) === queryPath &&
     query.startLine !== undefined &&
     query.endLine !== undefined
   ) {
@@ -116,11 +109,7 @@ function scoreLink(
     }
   }
 
-  if (
-    link.type === "hashline" &&
-    normalizePath(link.path) === queryPath &&
-    query.hashline
-  ) {
+  if (link.type === "hashline" && query.hashline) {
     if (
       link.line === query.hashline.line &&
       link.hash === query.hashline.hash

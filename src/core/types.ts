@@ -5,13 +5,11 @@ export type HashlineAnchor = {
 
 export type FileLink = {
   type: "file";
-  path: string;
   [key: string]: unknown;
 };
 
 export type RegionLink = {
   type: "region";
-  path: string;
   startLine: number;
   endLine: number;
   [key: string]: unknown;
@@ -19,14 +17,12 @@ export type RegionLink = {
 
 export type GitLink = {
   type: "git";
-  path: string;
   commit: string;
   [key: string]: unknown;
 };
 
 export type SymbolLink = {
   type: "symbol";
-  path: string;
   name: string;
   kind?: string;
   [key: string]: unknown;
@@ -34,7 +30,6 @@ export type SymbolLink = {
 
 export type HashlineLink = {
   type: "hashline";
-  path: string;
   line: number;
   hash: string;
   [key: string]: unknown;

@@ -38,7 +38,7 @@ describe("provenance chain", () => {
         targets: [
           {
             path: "a.ts",
-            links: [{ type: "file", path: "a.ts" }],
+            links: [{ type: "file" }],
           },
         ],
       },
@@ -52,7 +52,7 @@ describe("provenance chain", () => {
         targets: [
           {
             path: "a.ts",
-            links: [{ type: "symbol", path: "a.ts", name: "fetchWithRetry" }],
+            links: [{ type: "symbol", name: "fetchWithRetry" }],
           },
         ],
         metadata: { referencedRecords: [a.id] },
@@ -67,7 +67,7 @@ describe("provenance chain", () => {
         targets: [
           {
             path: "a.ts",
-            links: [{ type: "file", path: "a.ts" }],
+            links: [{ type: "file" }],
           },
         ],
         metadata: { referencedRecords: [b.id] },
@@ -86,7 +86,7 @@ describe("provenance chain", () => {
         model: "test",
         prompt: "original intent",
         targets: [
-          { path: "x.ts", links: [{ type: "file", path: "x.ts" }] },
+          { path: "x.ts", links: [{ type: "file" }] },
         ],
       },
       { promptsDir },
@@ -97,7 +97,7 @@ describe("provenance chain", () => {
         model: "test",
         prompt: "rename",
         targets: [
-          { path: "y.ts", links: [{ type: "file", path: "y.ts" }] },
+          { path: "y.ts", links: [{ type: "file" }] },
         ],
         metadata: { referencedRecords: [a.id] },
       },
@@ -115,7 +115,7 @@ describe("provenance chain", () => {
       {
         model: "test",
         prompt: "root",
-        targets: [{ path: "a.ts", links: [{ type: "file", path: "a.ts" }] }],
+        targets: [{ path: "a.ts", links: [{ type: "file" }] }],
       },
       { promptsDir },
     );
@@ -124,7 +124,7 @@ describe("provenance chain", () => {
       {
         model: "test",
         prompt: "middle",
-        targets: [{ path: "b.ts", links: [{ type: "file", path: "b.ts" }] }],
+        targets: [{ path: "b.ts", links: [{ type: "file" }] }],
         metadata: { referencedRecords: [a.id] },
       },
       { promptsDir },
@@ -134,7 +134,7 @@ describe("provenance chain", () => {
       {
         model: "test",
         prompt: "leaf",
-        targets: [{ path: "c.ts", links: [{ type: "file", path: "c.ts" }] }],
+        targets: [{ path: "c.ts", links: [{ type: "file" }] }],
         metadata: { referencedRecords: [b.id] },
       },
       { promptsDir },
@@ -155,8 +155,8 @@ describe("provenance chain", () => {
           {
             path: "fetch.ts",
             links: [
-              { type: "file", path: "fetch.ts" },
-              { type: "symbol", path: "fetch.ts", name: "fetch", kind: "function" },
+              { type: "file" },
+              { type: "symbol", name: "fetch", kind: "function" },
             ],
           },
         ],
@@ -171,7 +171,7 @@ describe("provenance chain", () => {
         targets: [
           {
             path: "fetch.ts",
-            links: [{ type: "symbol", path: "fetch.ts", name: "fetchWithRetry" }],
+            links: [{ type: "symbol", name: "fetchWithRetry" }],
           },
         ],
         metadata: { referencedRecords: [a.id] },

@@ -15,16 +15,14 @@ describe("validation", () => {
           {
             path: "src/api/fetch.ts",
             links: [
-              { type: "file", path: "src/api/fetch.ts" },
+              { type: "file" },
               {
                 type: "region",
-                path: "src/api/fetch.ts",
                 startLine: 10,
                 endLine: 20,
               },
               {
                 type: "symbol",
-                path: "src/api/fetch.ts",
                 name: "fetchWithRetry",
                 kind: "function",
               },
@@ -33,6 +31,24 @@ describe("validation", () => {
         ],
       }),
     ).not.toThrow();
+  });
+
+  it("rejects path on links (path belongs on the target)", () => {
+    expect(() =>
+      validateRecord({
+        version: 1,
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        timestamp: "2026-08-20T11:00:00.000Z",
+        model: "test",
+        prompt: "test",
+        targets: [
+          {
+            path: "a.ts",
+            links: [{ type: "file", path: "a.ts" }],
+          },
+        ],
+      }),
+    ).toThrow(ValidationError);
   });
 
   it("rejects invalid record shape", () => {
@@ -57,7 +73,7 @@ describe("buildRecord", () => {
       targets: [
         {
           path: "a.ts",
-          links: [{ type: "file", path: "a.ts" }],
+          links: [{ type: "file" }],
         },
       ],
     });

@@ -4,7 +4,7 @@ One npm package, `dot-prompts`, with subpath exports. Folders match those export
 
 | Path | Role |
 |---|---|
-| `src/core/` | Types, storage port (JSONL), record, query, validate, hashline, `promptsDir` |
+| `src/core/` | Types, storage port (JSONL), config/`findStore`, record, query, validate, hashline, `promptsDir` |
 | `src/links/` | File / region / symbol / git extraction and notice formatting |
 | `src/provenance/` | `referencedRecords` chain |
 | `src/tools/` | `TOOL_CATALOG` plus `prompts_read` / `prompts_chain` handlers |
@@ -42,9 +42,9 @@ flowchart TB
 
 ## Storage
 
-Callers talk to a `Storage` port (`append`, `list`, `getById`). `JsonlStorage` is the implementation. Pass `{ promptsDir }` or `{ storage }`.
+Callers talk to a `Storage` port (`append`, `list`, `getById`). `JsonlStorage` is the implementation. Pass `{ promptsDir }`, `{ storage }`, or `{ filePath }` / `{ cwd }` so `findStore` can walk up to `dotprompts.json` or `.prompts/config.json`.
 
-`.prompts/` resolves the same way everywhere: `--prompts-dir`, then `DOT_PROMPTS_DIR`, then `<cwd>/.prompts`.
+Store discovery: walk up from `filePath` (else `cwd`); prefer `dotprompts.json` then `.prompts/config.json`; stop at `.git` (use `<gitRoot>/.prompts`) or, with no git/config, `<cwd>/.prompts`. CLI `--prompts-dir` and API `{ promptsDir }` skip discovery. Config validates against `schemas/config.v1.json`.
 
 ## Tools
 

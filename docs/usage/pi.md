@@ -30,7 +30,7 @@ On successful `edit` or `write`:
 2. Derives `file`, `region`, `git`, and `symbol` links from the patch
 3. Stores pi session pointers in `metadata.pi`
 4. Stores ids of records read this turn in `metadata.referencedRecords`
-5. Appends to `.prompts/history.jsonl` in the project cwd
+5. Appends to the store discovered by walking up from the edited file (`dotprompts.json` / `.prompts/config.json`, else `<gitRoot>/.prompts`)
 
 On successful `read`, if matching provenance exists, appends:
 
@@ -40,6 +40,8 @@ On successful `read`, if matching provenance exists, appends:
 Use the prompts_read tool to fetch details if relevant to your task.
 ---
 ```
+
+Lookup and `prompts_read` use the same walk-up from the file path.
 
 It also registers `prompts_read`, `prompts_chain`, and `prompts_trace`. Read and chain share parameters with the [MCP tools](mcp.md). `prompts_trace` is session-file drill-down; this extension loads pi session JSONL.
 
@@ -75,6 +77,6 @@ Asks the agent to load `.prompts` for that file and summarize intent for a human
 | No `[dot-prompts]` notice | No matching history for the read range | Expected on files without records |
 | `prompts_trace` returns stored prompt text | Session file moved, deleted, or ephemeral | The `.prompts/` prompt is the portable layer |
 | Tool returns an internal-error message | Execute is wrapped; portable record text is returned when possible | `npm run build` and reload pi |
-| Records in the wrong project | pi cwd differs from the repo root | Records write to pi's cwd |
+| Records in the wrong package | Nearest config / `.prompts` is not the one you expect | Add `dotprompts.json` in the package root, or pass an explicit store via library opts |
 
 Manual integration fixture: [examples/footgun/SCENARIO.md](../../examples/footgun/SCENARIO.md).

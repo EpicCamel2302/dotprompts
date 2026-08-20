@@ -7,10 +7,33 @@ npm install && npm run build
 Global option (all commands):
 
 ```
---prompts-dir <path>   Path to .prompts directory (default: <cwd>/.prompts)
+--prompts-dir <path>   Path to .prompts directory (skips config discovery)
 ```
 
-Relative paths resolve against the process working directory. `DOT_PROMPTS_DIR` is an equivalent override.
+Relative `--prompts-dir` values resolve against the process working directory.
+
+## Store discovery
+
+When `--prompts-dir` is omitted, the store is resolved by walking up from a relevant file path (when the command has one) or from the process cwd:
+
+1. `dotprompts.json` in the current directory
+2. `.prompts/config.json` in the current directory
+3. Repeat on the parent directory
+4. Stop at a `.git` directory → use `<gitRoot>/.prompts`
+5. If the filesystem root is reached with no config and no `.git` → use `<cwd>/.prompts`
+
+Minimal `dotprompts.json`:
+
+```json
+{
+  "version": 1,
+  "storage": {
+    "driver": "jsonl"
+  }
+}
+```
+
+Optional `storage.path` sets the store directory (relative to the config’s directory for `dotprompts.json`, or relative to the parent of `.prompts` for nested config).
 
 ## `record`
 
@@ -20,7 +43,7 @@ Append a provenance record from JSON on stdin.
 dot-prompts record [--file <path>]
 ```
 
-**Input:** JSON matching the [record schema](schema.md). The CLI assigns `id` and `timestamp` if omitted.
+**Input:** JSON matching the [record schema](schema.md). The CLI assigns `id` and `timestamp` if omitted. When `--prompts-dir` is omitted, walk-up uses the first target path when present.
 
 **Output:** The validated record JSON on stdout.
 
@@ -30,7 +53,7 @@ echo '{
   "prompt": "Add retry logic",
   "targets": [{
     "path": "src/foo.ts",
-    "links": [{ "type": "file", "path": "src/foo.ts" }]
+    "links": [{ "type": "file" }]
   }]
 }' | dot-prompts record
 ```
@@ -45,7 +68,7 @@ dot-prompts lookup --path <path> [options]
 
 | Option | Description |
 |---|---|
-| `--path` | **Required.** File path to match |
+| `--path` | **Required.** File path to match (also used for store walk-up) |
 | `--start-line`, `--end-line` | Query region (1-indexed) |
 | `--symbol` | Symbol name to match |
 | `--hashline` | JSON anchor: `'{"line":42,"hash":"f1"}'` |

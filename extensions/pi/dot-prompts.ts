@@ -141,6 +141,7 @@ export function registerDotPromptsExtension(pi: ExtensionAPI): void {
         return;
       }
 
+      const absolutePath = resolve(ctx.cwd, event.input.path);
       const target = extractLinksFromEdit({
         cwd: ctx.cwd,
         path: event.input.path,
@@ -149,12 +150,15 @@ export function registerDotPromptsExtension(pi: ExtensionAPI): void {
         contentBefore: before,
       });
 
-      record({
-        model: modelSlug(ctx),
-        prompt: currentPrompt,
-        targets: [target],
-        metadata: buildRecordMetadata(ctx, "edit", event.toolCallId),
-      });
+      record(
+        {
+          model: modelSlug(ctx),
+          prompt: currentPrompt,
+          targets: [target],
+          metadata: buildRecordMetadata(ctx, "edit", event.toolCallId),
+        },
+        { filePath: absolutePath, cwd: ctx.cwd },
+      );
       return;
     }
 
@@ -162,6 +166,7 @@ export function registerDotPromptsExtension(pi: ExtensionAPI): void {
       if (isHistorySummarizePrompt(currentPrompt)) {
         return;
       }
+      const absolutePath = resolve(ctx.cwd, event.input.path);
       const lineCount = event.input.content.split("\n").length;
       const target = extractLinksFromWrite({
         cwd: ctx.cwd,
@@ -169,20 +174,26 @@ export function registerDotPromptsExtension(pi: ExtensionAPI): void {
         lineCount,
       });
 
-      record({
-        model: modelSlug(ctx),
-        prompt: currentPrompt,
-        targets: [target],
-        metadata: buildRecordMetadata(ctx, "write", event.toolCallId),
-      });
+      record(
+        {
+          model: modelSlug(ctx),
+          prompt: currentPrompt,
+          targets: [target],
+          metadata: buildRecordMetadata(ctx, "write", event.toolCallId),
+        },
+        { filePath: absolutePath, cwd: ctx.cwd },
+      );
       return;
     }
 
     if (isToolCallEventType("read", event)) {
       const { path, offset, limit } = event.input;
+      const absolutePath = resolve(ctx.cwd, path);
       const result = lookupForReadRange(path, offset, limit, {
         minConfidence: 0.4,
         limit: 5,
+        filePath: absolutePath,
+        cwd: ctx.cwd,
       });
 
       if (result.matches.length === 0) {
@@ -218,7 +229,13 @@ export function registerDotPromptsExtension(pi: ExtensionAPI): void {
     parameters: typeboxFromParams(read.params),
     promptGuidelines: [...read.guidelines],
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      const filePath =
+        typeof params.path === "string"
+          ? resolve(ctx.cwd, params.path)
+          : undefined;
       const result = handlePromptsRead(params, {
+        cwd: ctx.cwd,
+        filePath,
         onReadRecords: (ids) => noteReferencedRecords(...ids),
       });
       return {
@@ -255,6 +272,7 @@ export function registerDotPromptsExtension(pi: ExtensionAPI): void {
     promptGuidelines: [...chain.guidelines],
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       const result = handlePromptsChain(params, {
+        cwd: ctx.cwd,
         onReadRecords: (ids) => noteReferencedRecords(...ids),
       });
       return {

@@ -42,8 +42,10 @@ record({
   prompt: userPrompt,
   targets: [target],
   metadata: { harness: "my-harness", tool: "edit" },
-});
+}, { filePath: absolutePathToEditedFile });
 ```
+
+Pass `filePath` (or `promptsDir` / `storage`) so the store is resolved via walk-up from the edited file. See [CLI](../usage/cli.md) for discovery rules.
 
 | Function | Use when |
 |---|---|
@@ -77,6 +79,7 @@ import { lookupForReadRange, formatLookupNotice } from "dot-prompts";
 const result = lookupForReadRange(path, offset, limit, {
   minConfidence: 0.4,
   limit: 5,
+  filePath: absolutePath,
 });
 
 if (result.matches.length > 0) {
@@ -95,6 +98,7 @@ import { handlePromptsTrace } from "dot-prompts/pi";
 const result = handlePromptsRead(
   { path, startLine, endLine, symbol },
   {
+    filePath: absolutePath,
     onReadRecords: (ids) => {
       for (const id of ids) referencedRecordIds.add(id);
     },
