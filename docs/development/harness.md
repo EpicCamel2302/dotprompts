@@ -4,19 +4,29 @@ Wire record, read notices, and opt-in tools into an agent harness.
 
 ## Checklist
 
-1. **Record** after every successful AI edit
+1. **Record** once per user generation (buffer successful edits, flush at generation end)
 2. **Notify** on file read when matching history exists
 3. **Provide opt-in tools** for prompt text and further drill-down
 4. Inject the notice only — full history stays behind tools
 
 ## Write path
 
-After the harness applies an edit, call `record` with:
+**Buffer during the generation, flush once at generation end.**
+
+A *generation* is one submitted user prompt (Pi: `before_agent_start` → `agent_end`), not each tool round inside the agent loop.
+
+1. On each successful edit/write: derive links and **upsert** into an in-generation buffer by path (last-edit wins for the same file)
+2. On generation end (`agent_end`, with a safety flush on `session_shutdown` if needed): call `record` once with all buffered targets
+3. Skip flush when there is no user prompt, the turn is a history-summarize prompt, or the buffer is empty
+
+Shared helpers: `GenerationRecordBuffer`, `upsertTargetByPath` from `dot-prompts`.
+
+Call `record` with:
 
 - `model` — active model slug
-- `prompt` — the user's prompt for the current turn
-- `targets` — one entry per file, with derived [links](../usage/link-types.md)
-- `metadata` — harness id, tool name, session pointers
+- `prompt` — the user's prompt for the generation
+- `targets` — one entry per file touched, with derived [links](../usage/link-types.md)
+- `metadata` — harness id, tool name(s), session pointers
 
 ### CLI
 
@@ -56,16 +66,24 @@ Both produce `file` and `region` links. Edit extraction also adds `git` and `sym
 
 Records store location pointers. Diffs live in git. Skip a record when there is no user prompt.
 
-Prefer one record per user turn when a single prompt caused several file edits:
+One generation → one record. Multiple files become multiple `targets`. Repeated edits to the same file keep only the **last** link set for that path:
 
 ```json
 {
   "targets": [
     { "path": "src/a.ts", "links": [...] },
     { "path": "src/b.ts", "links": [...] }
-  ]
+  ],
+  "metadata": {
+    "harness": "pi",
+    "tool": "write",
+    "tools": ["edit", "write"],
+    "pi": { "toolCallId": "…", "toolCallIds": ["…", "…"] }
+  }
 }
 ```
+
+`metadata.tool` is the last successful write tool; `metadata.tools` lists unique tools in first-seen order when more than one tool was used. Cursor hooks should use the same buffer→flush shape (durable turn state keyed by conversation + generation id).
 
 ## Read path
 
@@ -120,7 +138,8 @@ Portable provenance lives in `prompt` and `links`. Local drill-down pointers liv
 {
   "harness": "pi",
   "tool": "edit",
-  "pi": { "sessionFile": "…", "sessionId": "…" }
+  "tools": ["edit", "write"],
+  "pi": { "sessionFile": "…", "sessionId": "…", "toolCallId": "…", "toolCallIds": ["…"] }
 }
 ```
 

@@ -36,6 +36,10 @@ describe("pi extension", () => {
     return fake;
   }
 
+  async function endGeneration(fake: Awaited<ReturnType<typeof startExtension>>) {
+    await fake.emit("agent_end");
+  }
+
   it("records a successful edit with pi session metadata", async () => {
     const fake = await startExtension();
     mkdirSync(join(cwd, "src"));
@@ -61,6 +65,8 @@ describe("pi extension", () => {
         firstChangedLine: 1,
       },
     });
+
+    await endGeneration(fake);
 
     const records = list();
     expect(records).toHaveLength(1);
@@ -90,6 +96,8 @@ describe("pi extension", () => {
       content: [],
     });
 
+    await endGeneration(fake);
+
     const records = list();
     expect(records).toHaveLength(1);
     expect(records[0]?.metadata).toMatchObject({
@@ -118,6 +126,7 @@ describe("pi extension", () => {
       content: [],
     });
 
+    await endGeneration(fake);
     expect(list()).toHaveLength(0);
   });
 
@@ -137,6 +146,7 @@ describe("pi extension", () => {
       input: { path: "retry.ts" },
       content: [],
     });
+    await endGeneration(fake);
 
     const result = await fake.emit("tool_result", {
       toolCallId: "read-1",
@@ -175,6 +185,7 @@ describe("pi extension", () => {
       input: { path: "retry.ts" },
       content: [],
     });
+    await endGeneration(fake);
 
     const first = list()[0];
     expect(first).toBeDefined();
@@ -206,9 +217,101 @@ describe("pi extension", () => {
       input: { path: "retry.ts" },
       content: [],
     });
+    await endGeneration(fake);
 
     const second = list().find((record) => record.id !== first?.id);
     expect(second?.metadata?.referencedRecords).toEqual([first?.id]);
+  });
+
+
+  it("coalesces multiple edits of the same file into one record (last-edit wins)", async () => {
+    const fake = await startExtension("tweak retry.ts");
+    writeFileSync(join(cwd, "retry.ts"), "const n = 1;\n", "utf8");
+
+    await fake.emit("tool_call", {
+      toolCallId: "edit-1",
+      toolName: "edit",
+      input: { path: "retry.ts" },
+    });
+    writeFileSync(join(cwd, "retry.ts"), "const n = 2;\n", "utf8");
+    await fake.emit("tool_result", {
+      toolCallId: "edit-1",
+      toolName: "edit",
+      isError: false,
+      input: { path: "retry.ts" },
+      content: [],
+      details: {
+        patch: "@@ -1,1 +1,1 @@\n-const n = 1;\n+const n = 2;",
+        firstChangedLine: 1,
+      },
+    });
+
+    await fake.emit("tool_call", {
+      toolCallId: "edit-2",
+      toolName: "edit",
+      input: { path: "retry.ts" },
+    });
+    writeFileSync(join(cwd, "retry.ts"), "const n = 3;\n", "utf8");
+    await fake.emit("tool_result", {
+      toolCallId: "edit-2",
+      toolName: "edit",
+      isError: false,
+      input: { path: "retry.ts" },
+      content: [],
+      details: {
+        patch: "@@ -1,1 +1,1 @@\n-const n = 2;\n+const n = 3;",
+        firstChangedLine: 1,
+      },
+    });
+
+    await endGeneration(fake);
+    const records = list();
+    expect(records).toHaveLength(1);
+    expect(records[0]?.targets).toHaveLength(1);
+    expect(records[0]?.targets[0]?.path).toBe("retry.ts");
+    expect(records[0]?.metadata).toMatchObject({
+      tool: "edit",
+      pi: { toolCallId: "edit-2", toolCallIds: ["edit-1", "edit-2"] },
+    });
+  });
+
+  it("coalesces multi-file edits into one record with multiple targets", async () => {
+    const fake = await startExtension("update a and b");
+    writeFileSync(join(cwd, "a.ts"), "export const a = 1;\n", "utf8");
+    writeFileSync(join(cwd, "b.ts"), "export const b = 1;\n", "utf8");
+
+    await fake.emit("tool_call", {
+      toolCallId: "edit-a",
+      toolName: "edit",
+      input: { path: "a.ts" },
+    });
+    writeFileSync(join(cwd, "a.ts"), "export const a = 2;\n", "utf8");
+    await fake.emit("tool_result", {
+      toolCallId: "edit-a",
+      toolName: "edit",
+      isError: false,
+      input: { path: "a.ts" },
+      content: [],
+      details: { patch: "@@ -1,1 +1,1 @@\n-export const a = 1;\n+export const a = 2;", firstChangedLine: 1 },
+    });
+
+    await fake.emit("tool_result", {
+      toolCallId: "write-b",
+      toolName: "write",
+      isError: false,
+      input: { path: "b.ts", content: "export const b = 2;\n" },
+      content: [],
+    });
+
+    await endGeneration(fake);
+    const records = list();
+    expect(records).toHaveLength(1);
+    expect(records[0]?.targets.map((t) => t.path).sort()).toEqual(["a.ts", "b.ts"]);
+    expect(records[0]?.metadata).toMatchObject({
+      tool: "write",
+      tools: ["edit", "write"],
+      pi: { toolCallId: "write-b", toolCallIds: ["edit-a", "write-b"] },
+    });
   });
 
   it("registers read, chain, and trace tools", async () => {
