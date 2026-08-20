@@ -52,6 +52,24 @@ export type {
   PiSessionEntry,
   PiTraceResult,
 } from "./pi/types.js";
+export {
+  createDotPromptsMcpServer,
+  resolvePromptsDirFromEnv,
+  startDotPromptsMcpServer,
+} from "./mcp/server.js";
+export type { McpServerOptions } from "./mcp/server.js";
+export {
+  handlePromptsChain,
+  handlePromptsRead,
+  handlePromptsTrace,
+} from "./tools/handlers.js";
+export type {
+  PromptsChainParams,
+  PromptsReadParams,
+  PromptsTraceParams,
+  ToolHandlerOptions,
+  ToolHandlerResult,
+} from "./tools/handlers.js";
 export { ValidationError } from "./validate.js";
 export type {
   ContextOptions,
