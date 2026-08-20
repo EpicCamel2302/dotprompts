@@ -1,19 +1,48 @@
 version: 2
 updates:
+  # Root package: group safe bumps; leave production majors as individual PRs.
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      dev-minor-and-patch:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+      production-minor-and-patch:
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
 
+  # Pi extension nest: same policy.
   - package-ecosystem: npm
     directory: /extensions/pi
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      dev-minor-and-patch:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+      production-minor-and-patch:
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
 
+  # All Actions bumps in one PR (including majors — review carefully).
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      actions:
+        patterns:
+          - "*"
