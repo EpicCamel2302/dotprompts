@@ -10,6 +10,7 @@ Provenance and observability for LLM-generated code edits.
 | [Schema reference](schema.md) | Record format, fields, validation rules |
 | [Link types](link-types.md) | Typed link registry and lookup confidence |
 | [CLI reference](cli.md) | `dot-prompts` command-line usage |
+| [MCP server](mcp.md) | Portable opt-in tools (`prompts_read` / `chain` / `trace`) |
 | [Harness integration](harness-integration.md) | Building record/lookup into agent harnesses |
 | [Pi extension](pi-extension.md) | Automatic capture with pi coding agent |
 

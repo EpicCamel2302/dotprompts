@@ -87,6 +87,8 @@ Agent tool that returns ranked prior prompts for a path/region/symbol.
 
 Use [`formatLookupForAgent()`](../src/links/extract.ts) to format results. Include record ids so the agent can trace further.
 
+**Portable option:** expose the same tools via the [MCP server](mcp.md) (`prompts_read`, `prompts_chain`, `prompts_trace`) so Claude Code, Cursor, and other MCP clients share one implementation. Harnesses that cannot run MCP can call the [CLI](cli.md) instead.
+
 ### Step 3: `prompts_trace` (agent opt-in, local)
 
 For vague prompts ("execute plan"), drill into the harness session branch. See [pi extension](pi-extension.md) for the reference implementation.

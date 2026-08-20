@@ -42,7 +42,9 @@ Stage 3: prompts_trace            → local pi session context (best-effort)
 
 Each stage adds context cost. Stop when you have enough to respect prior intent.
 
-## Tools (pi extension)
+## Tools (MCP or pi)
+
+These tools may appear as **MCP tools** (`dot-prompts` server) or as **pi-native** tools. Behavior and parameters are the same either way. If neither is available, use the CLI: `dot-prompts lookup`, `dot-prompts chain`, `dot-prompts get`.
 
 ### `prompts_read`
 
@@ -139,13 +141,14 @@ prompts_read A → "keep retry=3 for 429 responses"
 
 Use `dot-prompts get <id>` or `prompts_chain` / `prompts_trace` on each id in the chain when symbol/file links no longer resolve.
 
-## CLI (without pi tools)
+## CLI (without MCP / pi tools)
 
 If tools are unavailable, use the CLI:
 
 ```bash
 dot-prompts lookup --path src/foo.ts --symbol myFunction
 dot-prompts get <record-id>
+dot-prompts chain <record-id> --format text
 ```
 
 ## Further reading
@@ -153,4 +156,5 @@ dot-prompts get <record-id>
 - [docs/overview.md](docs/overview.md) — design principles
 - [docs/schema.md](docs/schema.md) — full schema
 - [docs/link-types.md](docs/link-types.md) — link type registry
+- [docs/mcp.md](docs/mcp.md) — portable MCP tools
 - [docs/pi-extension.md](docs/pi-extension.md) — pi setup
