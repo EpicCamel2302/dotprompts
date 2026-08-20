@@ -1,12 +1,11 @@
 # Changelog
 
-## Unreleased
+## [0.3.0](https://github.com/EpicCamel2302/dotprompts/compare/v0.2.0...v0.3.0) (2026-08-20)
 
-- Project config (`dotprompts.json` or `.prompts/config.json`) with schema `config.v1.json` (`storage.driver`, optional `storage.path`).
-- Store resolution walks up from the edited/read file path (else cwd) via `findStore`; CLI `--prompts-dir` and API `{ promptsDir }` / `{ storage }` override discovery.
-- Removed `DOT_PROMPTS_DIR` and `resolvePromptsDirFromEnv` (use `--prompts-dir` / `resolvePromptsDirFromCli` / `findStore`).
-- Links no longer carry `path`; file path lives only on `target.path` (schema forbids `path` on links). Lookup matches the target first, then scores link types.
-- release-please on `main` for version bumps, `CHANGELOG.md`, and GitHub Releases ([docs/development/releasing.md](docs/development/releasing.md)).
+
+### Features
+
+* coalesce edits into one record per user generation ([#27](https://github.com/EpicCamel2302/dotprompts/issues/27)) ([82071b2](https://github.com/EpicCamel2302/dotprompts/commit/82071b24476e6ba24e90dcc668f20228d81e26f4))
 
 ## 0.2.0
 
