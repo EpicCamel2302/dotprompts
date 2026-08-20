@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dot-prompts.dev/schemas/config/v1.json",
+  "title": "dot-prompts Config",
+  "description": "Project config for store location and storage driver.",
+  "type": "object",
+  "required": ["version", "storage"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "storage": {
+      "type": "object",
+      "required": ["driver"],
+      "additionalProperties": false,
+      "properties": {
+        "driver": {
+          "type": "string",
+          "enum": ["jsonl"]
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Store directory. Relative paths resolve against the config directory (dotprompts.json) or the parent of .prompts (nested config)."
+        }
+      }
+    }
+  }
+}

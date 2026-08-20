@@ -29,10 +29,9 @@ describe("tool handlers", () => {
           {
             path: "fetch.ts",
             links: [
-              { type: "file", path: "fetch.ts" },
+              { type: "file" },
               {
                 type: "symbol",
-                path: "fetch.ts",
                 name: "fetchWithRetry",
                 kind: "function",
               },
@@ -58,7 +57,7 @@ describe("tool handlers", () => {
         model: "test",
         prompt: "Add retry for 429",
         targets: [
-          { path: "a.ts", links: [{ type: "file", path: "a.ts" }] },
+          { path: "a.ts", links: [{ type: "file" }] },
         ],
       },
       { promptsDir },
@@ -69,7 +68,7 @@ describe("tool handlers", () => {
         model: "test",
         prompt: "Rename helper",
         targets: [
-          { path: "a.ts", links: [{ type: "file", path: "a.ts" }] },
+          { path: "a.ts", links: [{ type: "file" }] },
         ],
         metadata: { referencedRecords: [a.id] },
       },
@@ -97,7 +96,7 @@ describe("tool handlers", () => {
         model: "test",
         prompt: "execute plan",
         targets: [
-          { path: "x.ts", links: [{ type: "file", path: "x.ts" }] },
+          { path: "x.ts", links: [{ type: "file" }] },
         ],
         metadata: {
           pi: {
@@ -133,7 +132,7 @@ describe("tool handlers", () => {
         model: "test",
         prompt: "Keep retry count at 3",
         targets: [
-          { path: "fetch.ts", links: [{ type: "file", path: "fetch.ts" }] },
+          { path: "fetch.ts", links: [{ type: "file" }] },
         ],
       },
       { promptsDir },

@@ -3,12 +3,20 @@
 import { isMissingMcpPeer, MCP_PEER_HINT } from "./peers.js";
 
 async function main(): Promise<void> {
-  const { resolvePromptsDirFromEnv, startDotPromptsMcpServer } = await import(
+  const { resolvePromptsDirFromCli, startDotPromptsMcpServer } = await import(
     "./server.js"
   );
-  await startDotPromptsMcpServer({
-    promptsDir: resolvePromptsDirFromEnv(),
-  });
+  const promptsDir = resolvePromptsDirFromCli();
+  // Only freeze an explicit --prompts-dir; otherwise tools walk up per call.
+  const argv = process.argv.slice(2);
+  const hasExplicit =
+    argv.includes("--prompts-dir") ||
+    argv.includes("--promptsDir") ||
+    argv.some((arg) => arg.startsWith("--prompts-dir="));
+
+  await startDotPromptsMcpServer(
+    hasExplicit ? { promptsDir } : {},
+  );
 }
 
 main().catch((error) => {

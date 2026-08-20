@@ -9,18 +9,15 @@
       "path": "examples/footgun/fetch.ts",
       "links": [
         {
-          "type": "file",
-          "path": "examples/footgun/fetch.ts"
+          "type": "file"
         },
         {
           "type": "region",
-          "path": "examples/footgun/fetch.ts",
           "startLine": 9,
           "endLine": 26
         },
         {
           "type": "symbol",
-          "path": "examples/footgun/fetch.ts",
           "name": "MAX_RETRIES",
           "kind": "const"
         }

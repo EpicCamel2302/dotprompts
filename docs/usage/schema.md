@@ -15,16 +15,14 @@ A **record** is one provenance event: a user prompt that caused one or more file
     {
       "path": "examples/footgun/fetch.ts",
       "links": [
-        { "type": "file", "path": "examples/footgun/fetch.ts" },
+        { "type": "file" },
         {
           "type": "region",
-          "path": "examples/footgun/fetch.ts",
           "startLine": 1,
           "endLine": 22
         },
         {
           "type": "symbol",
-          "path": "examples/footgun/fetch.ts",
           "name": "fetchWithRetry",
           "kind": "function"
         }
@@ -64,8 +62,8 @@ Top-level record uses `additionalProperties: false`. Harness extensions go in `m
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `path` | string | yes | Repo-relative file path |
-| `links` | array (min 1) | yes | Typed [links](link-types.md) |
+| `path` | string | yes | Repo-relative file path (the only place path is stored) |
+| `links` | array (min 1) | yes | Typed [links](link-types.md) for this file — no per-link `path` |
 
 `target` uses `additionalProperties: false`.
 
@@ -117,6 +115,8 @@ Harnesses may add keys. Prefer namespaced names (`myTool.feature`) to avoid coll
 **`history.jsonl`** — canonical append-only log; one complete record object per line.
 
 **`records/<timestamp>_<id>.json`** — mirrored copy of each record for browsing.
+
+**`dotprompts.json`** or **`.prompts/config.json`** — optional project config (`schemas/config.v1.json`). See [CLI](cli.md) for discovery and `storage.path`.
 
 Writes are validated with Ajv against `record.v1.json`.
 

@@ -24,7 +24,7 @@ Missing peers fail the CLI with an install hint instead of a raw module-not-foun
 
 ## Client config
 
-Point the client at the built CLI and set `cwd` to the project that owns `.prompts/`:
+Point the client at the built CLI and set `cwd` to the project (or monorepo package) that owns the store:
 
 ```json
 {
@@ -69,14 +69,13 @@ Session-file drill-down (`prompts_trace`) is not an MCP tool today; see [Pi](pi.
 
 ## Resolving `.prompts/`
 
-Default: `<process.cwd()>/.prompts`
+`prompts_read` walks up from the query `path` to find `dotprompts.json` or `.prompts/config.json` (see [CLI](cli.md)). `prompts_chain` walks up from the server process cwd.
 
-| Source | Example |
-|---|---|
-| `--prompts-dir` | `node dist/mcp/cli.js --prompts-dir /tmp/proj/.prompts` |
-| `DOT_PROMPTS_DIR` | `DOT_PROMPTS_DIR=/tmp/proj/.prompts npm run mcp` |
+Override discovery:
 
-Spawn the server with `cwd` set to the project root whenever possible.
+```bash
+node dist/mcp/cli.js --prompts-dir /tmp/proj/.prompts
+```
 
 ## CLI
 

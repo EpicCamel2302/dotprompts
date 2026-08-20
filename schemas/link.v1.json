@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://dot-prompts.dev/schemas/link/v1.json",
   "title": "Provenance Link",
-  "description": "A typed link identifying where an edit applied. Extensible via additionalProperties.",
+  "description": "A typed link identifying where an edit applied within a target file. Path lives on the parent target; links must not include path.",
   "oneOf": [
     { "$ref": "#/$defs/fileLink" },
     { "$ref": "#/$defs/regionLink" },
@@ -13,19 +13,19 @@
   "$defs": {
     "fileLink": {
       "type": "object",
-      "required": ["type", "path"],
+      "required": ["type"],
       "properties": {
         "type": { "const": "file" },
-        "path": { "type": "string", "minLength": 1 }
+        "path": false
       },
       "additionalProperties": true
     },
     "regionLink": {
       "type": "object",
-      "required": ["type", "path", "startLine", "endLine"],
+      "required": ["type", "startLine", "endLine"],
       "properties": {
         "type": { "const": "region" },
-        "path": { "type": "string", "minLength": 1 },
+        "path": false,
         "startLine": { "type": "integer", "minimum": 1 },
         "endLine": { "type": "integer", "minimum": 1 }
       },
@@ -33,20 +33,20 @@
     },
     "gitLink": {
       "type": "object",
-      "required": ["type", "path", "commit"],
+      "required": ["type", "commit"],
       "properties": {
         "type": { "const": "git" },
-        "path": { "type": "string", "minLength": 1 },
+        "path": false,
         "commit": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": true
     },
     "symbolLink": {
       "type": "object",
-      "required": ["type", "path", "name"],
+      "required": ["type", "name"],
       "properties": {
         "type": { "const": "symbol" },
-        "path": { "type": "string", "minLength": 1 },
+        "path": false,
         "name": { "type": "string", "minLength": 1 },
         "kind": { "type": "string" }
       },
@@ -54,10 +54,10 @@
     },
     "hashlineLink": {
       "type": "object",
-      "required": ["type", "path", "line", "hash"],
+      "required": ["type", "line", "hash"],
       "properties": {
         "type": { "const": "hashline" },
-        "path": { "type": "string", "minLength": 1 },
+        "path": false,
         "line": { "type": "integer", "minimum": 1 },
         "hash": {
           "type": "string",

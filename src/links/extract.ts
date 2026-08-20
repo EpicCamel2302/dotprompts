@@ -58,7 +58,7 @@ export function estimateRegionFromEdits(
 
 export function extractLinksFromEdit(opts: ExtractEditOptions): Target {
   const repoPath = toRepoRelativePath(opts.cwd, opts.path);
-  const links: Link[] = [{ type: "file", path: repoPath }];
+  const links: Link[] = [{ type: "file" }];
 
   let region =
     opts.patch !== undefined
@@ -70,12 +70,11 @@ export function extractLinksFromEdit(opts: ExtractEditOptions): Target {
 
   links.push({
     type: "region",
-    path: repoPath,
     startLine: region.startLine,
     endLine: region.endLine,
   });
 
-  const gitLink = createGitLink(opts.cwd, repoPath);
+  const gitLink = createGitLink(opts.cwd);
   if (gitLink) {
     links.push(gitLink);
   }
@@ -98,7 +97,6 @@ export function extractLinksFromEdit(opts: ExtractEditOptions): Target {
     if (symbol) {
       links.push({
         type: "symbol",
-        path: repoPath,
         name: symbol.name,
         kind: symbol.kind,
       });
@@ -110,17 +108,16 @@ export function extractLinksFromEdit(opts: ExtractEditOptions): Target {
 
 export function extractLinksFromWrite(opts: ExtractWriteOptions): Target {
   const repoPath = toRepoRelativePath(opts.cwd, opts.path);
-  const links: Link[] = [{ type: "file", path: repoPath }];
+  const links: Link[] = [{ type: "file" }];
 
   const endLine = opts.lineCount ?? 1;
   links.push({
     type: "region",
-    path: repoPath,
     startLine: 1,
     endLine,
   });
 
-  const gitLink = createGitLink(opts.cwd, repoPath);
+  const gitLink = createGitLink(opts.cwd);
   if (gitLink) {
     links.push(gitLink);
   }

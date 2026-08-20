@@ -12,7 +12,10 @@ An append-only log:
 .prompts/
   history.jsonl       # one JSON object per line
   records/            # mirrored individual records
+  config.json         # optional nested project config
 ```
+
+Project config can also live at `dotprompts.json` next to the package or repo root. See [CLI](cli.md) for discovery rules.
 
 Each record captures:
 

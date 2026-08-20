@@ -24,16 +24,14 @@ describe("storage and ranked lookup", () => {
       {
         path: "src/api/fetch.ts",
         links: [
-          { type: "file" as const, path: "src/api/fetch.ts" },
+          { type: "file" as const },
           {
             type: "region" as const,
-            path: "src/api/fetch.ts",
             startLine: 40,
             endLine: 50,
           },
           {
             type: "symbol" as const,
-            path: "src/api/fetch.ts",
             name: "fetchWithRetry",
             kind: "function",
           },
@@ -102,7 +100,6 @@ describe("storage and ranked lookup", () => {
             links: [
               {
                 type: "hashline",
-                path: "src/a.ts",
                 line: 42,
                 hash: "f1",
               },

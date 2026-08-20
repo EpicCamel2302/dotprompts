@@ -1,7 +1,7 @@
 export {
   createDotPromptsMcpServer,
   MCP_TOOLS,
-  resolvePromptsDirFromEnv,
+  resolvePromptsDirFromCli,
   startDotPromptsMcpServer,
 } from "./server.js";
 export type { McpServerOptions } from "./server.js";

@@ -29,10 +29,9 @@ describe("cli smoke", () => {
           {
             path: "sample.ts",
             links: [
-              { type: "file", path: "sample.ts" },
+              { type: "file" },
               {
                 type: "region",
-                path: "sample.ts",
                 startLine: 1,
                 endLine: 3,
               },

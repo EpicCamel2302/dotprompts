@@ -4,10 +4,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { packageRoot } from "../core/package-root.js";
-import {
-  resolvePromptsDir,
-  resolvePromptsDirFromEnv,
-} from "../core/prompts-dir.js";
+import { resolvePromptsDir } from "../core/prompts-dir.js";
+import { resolvePromptsDirFromCli } from "../core/config.js";
 import { TOOL_CATALOG, type ToolParam } from "../tools/catalog.js";
 import {
   handlePromptsChain,
@@ -19,13 +17,14 @@ import type {
 } from "../tools/handlers.js";
 
 export type McpServerOptions = {
+  /** Explicit store override. When omitted, each tool resolves via walk-up. */
   promptsDir?: string;
 };
 
 /** Portable MCP tools. Session-file trace stays on the pi export and extension. */
 export const MCP_TOOLS = ["prompts_read", "prompts_chain"] as const;
 
-export { resolvePromptsDirFromEnv };
+export { resolvePromptsDirFromCli };
 
 function packageVersion(): string {
   const pkg = JSON.parse(
@@ -52,14 +51,16 @@ function toolResult(text: string) {
 
 /**
  * Create the dot-prompts MCP server (tools only — no auto-record).
- * `.prompts/` is resolved relative to process.cwd() unless promptsDir is set.
+ * Without `promptsDir`, `prompts_read` walks up from the query path and
+ * `prompts_chain` walks up from process.cwd().
  */
 export function createDotPromptsMcpServer(
   opts: McpServerOptions = {},
 ): McpServer {
-  const promptsDir = opts.promptsDir
-    ? resolvePromptsDir(opts.promptsDir)
-    : resolvePromptsDirFromEnv();
+  const promptsDir =
+    opts.promptsDir !== undefined
+      ? resolvePromptsDir(opts.promptsDir)
+      : undefined;
 
   const server = new McpServer({
     name: "dot-prompts",
@@ -75,7 +76,12 @@ export function createDotPromptsMcpServer(
       inputSchema: zodShapeFromParams(read.params),
     },
     async (args) => {
-      const result = handlePromptsRead(args as PromptsReadParams, { promptsDir });
+      const params = args as PromptsReadParams;
+      const result = handlePromptsRead(params, {
+        ...(promptsDir !== undefined
+          ? { promptsDir }
+          : { filePath: params.path }),
+      });
       return toolResult(result.text);
     },
   );
@@ -89,7 +95,9 @@ export function createDotPromptsMcpServer(
       inputSchema: zodShapeFromParams(chain.params),
     },
     async (args) => {
-      const result = handlePromptsChain(args as PromptsChainParams, { promptsDir });
+      const result = handlePromptsChain(args as PromptsChainParams, {
+        ...(promptsDir !== undefined ? { promptsDir } : {}),
+      });
       return toolResult(result.text);
     },
   );

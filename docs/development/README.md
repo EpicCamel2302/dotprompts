@@ -6,6 +6,7 @@ Building on the dot-prompts codebase: layout, library API, and how to add a harn
 |---|---|
 | [Architecture](architecture.md) | Source tree, storage, tools, conventions |
 | [Harnesses](harness.md) | Record, notice, and opt-in tools |
+| [Releasing](releasing.md) | release-please, Conventional Commits, tags |
 
 Usage (install, CLI, MCP, schema): [../usage](../usage/README.md).
 

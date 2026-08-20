@@ -17,8 +17,20 @@ program
   .description("Provenance and observability for LLM-generated code edits")
   .option("--prompts-dir <path>", "Path to .prompts directory");
 
-function getPromptsDir(cmd: Command): string {
-  return resolvePromptsDir(cmd.optsWithGlobals().promptsDir as string | undefined);
+type StoreResolveOpts = {
+  filePath?: string;
+};
+
+function resolveCliStore(cmd: Command, opts: StoreResolveOpts = {}) {
+  const explicit = cmd.optsWithGlobals().promptsDir as string | undefined;
+  if (explicit !== undefined) {
+    return {
+      promptsDir: resolvePromptsDir(explicit),
+    };
+  }
+  return {
+    filePath: opts.filePath,
+  };
 }
 
 function outputJson(value: unknown): void {
@@ -60,7 +72,8 @@ program
         ? readFileSync(opts.file, "utf8")
         : await readStdin();
       const input = JSON.parse(raw) as RecordInput;
-      const result = record(input, { promptsDir: getPromptsDir(cmd) });
+      const filePath = input.targets?.[0]?.path;
+      const result = record(input, resolveCliStore(cmd, { filePath }));
       outputJson(result);
     } catch (error) {
       outputError(error);
@@ -99,7 +112,7 @@ program
       }
 
       const result = lookup(query, {
-        promptsDir: getPromptsDir(cmd),
+        ...resolveCliStore(cmd, { filePath: opts.path }),
         limit: opts.limit,
         minConfidence: opts.minConfidence,
       });
@@ -143,7 +156,7 @@ program
     try {
       const opts = cmd.optsWithGlobals();
       const records = list({
-        promptsDir: getPromptsDir(cmd),
+        ...resolveCliStore(cmd, { filePath: opts.path }),
         limit: opts.limit,
         since: opts.since,
         path: opts.path,
@@ -161,7 +174,7 @@ program
   .argument("<id>", "Record UUID")
   .action((id, _, cmd) => {
     try {
-      const result = get(id, { promptsDir: getPromptsDir(cmd) });
+      const result = get(id, resolveCliStore(cmd));
       if (!result) {
         process.stderr.write(
           `${JSON.stringify({ error: "not_found", id }, null, 2)}\n`,
@@ -187,7 +200,7 @@ program
     try {
       const opts = cmd.optsWithGlobals();
       const result = chain(ids, {
-        promptsDir: getPromptsDir(cmd),
+        ...resolveCliStore(cmd),
         maxDepth: opts.maxDepth,
         maxRecords: opts.maxRecords,
       });
@@ -214,7 +227,7 @@ program
     try {
       const opts = cmd.optsWithGlobals();
       const result = context({
-        promptsDir: getPromptsDir(cmd),
+        ...resolveCliStore(cmd, { filePath: opts.path }),
         limit: opts.limit ?? 10,
         since: opts.since,
         path: opts.path,

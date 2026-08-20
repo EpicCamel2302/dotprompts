@@ -25,11 +25,22 @@ export {
 } from "./core/storage.js";
 export type { Storage, StoreOptions } from "./core/storage.js";
 export {
-  PROMPTS_DIR_ENV,
   PROMPTS_DIR_NAME,
   resolvePromptsDir,
-  resolvePromptsDirFromEnv,
 } from "./core/prompts-dir.js";
+export {
+  CONFIG_FILE_NESTED,
+  CONFIG_FILE_PRIMARY,
+  findStore,
+  loadConfigFile,
+  resolvePromptsDirFromCli,
+  validateConfig,
+} from "./core/config.js";
+export type {
+  DotPromptsConfig,
+  FindStoreOptions,
+  ResolvedStore,
+} from "./core/config.js";
 export { getHarnessSessionPointers } from "./core/metadata.js";
 export type { HarnessSessionPointers } from "./core/metadata.js";
 export {

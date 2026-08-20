@@ -7,6 +7,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
+import { findStore } from "./config.js";
 import { resolvePromptsDir } from "./prompts-dir.js";
 import type { PromptRecord } from "./types.js";
 
@@ -24,20 +25,28 @@ export type StoreOptions = {
   promptsDir?: string;
   storage?: Storage;
   cwd?: string;
+  /** Prefer walking up from this file when promptsDir/storage are omitted. */
+  filePath?: string;
 };
 
 export function resolveStorage(opts?: StoreOptions): Storage {
   if (opts?.storage) {
     return opts.storage;
   }
-  return createJsonlStorage(opts?.promptsDir, opts?.cwd);
+  if (opts?.promptsDir !== undefined) {
+    return createJsonlStorage(
+      resolvePromptsDir(opts.promptsDir, opts.cwd),
+    );
+  }
+  const resolved = findStore({
+    filePath: opts?.filePath,
+    cwd: opts?.cwd,
+  });
+  return createJsonlStorage(resolved.promptsDir);
 }
 
-export function createJsonlStorage(
-  promptsDir?: string,
-  cwd?: string,
-): Storage {
-  return new JsonlStorage(resolvePromptsDir(promptsDir, cwd));
+export function createJsonlStorage(promptsDir: string): Storage {
+  return new JsonlStorage(promptsDir);
 }
 
 export class JsonlStorage implements Storage {

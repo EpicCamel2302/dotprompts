@@ -57,6 +57,7 @@ export function handlePromptsRead(
         promptsDir: opts.promptsDir,
         storage: opts.storage,
         cwd: opts.cwd,
+        filePath: opts.filePath ?? params.path,
         limit: params.limit ?? 5,
         minConfidence: 0.4,
       },
@@ -93,6 +94,7 @@ export function handlePromptsChain(
       promptsDir: opts.promptsDir,
       storage: opts.storage,
       cwd: opts.cwd,
+      filePath: opts.filePath,
       maxDepth: params.maxDepth,
       maxRecords: params.maxRecords,
     });
