@@ -15,6 +15,20 @@ describe("getHarnessSessionPointers", () => {
     });
   });
 
+  it("falls back to top-level session pointers", () => {
+    expect(
+      getHarnessSessionPointers({
+        harness: "custom",
+        sessionFile: "/tmp/top.jsonl",
+        sessionId: "top-1",
+      }),
+    ).toEqual({
+      harness: "custom",
+      sessionFile: "/tmp/top.jsonl",
+      sessionId: "top-1",
+    });
+  });
+
   it("returns null when no session pointers exist", () => {
     expect(getHarnessSessionPointers({ harness: "pi" })).toBeNull();
     expect(getHarnessSessionPointers(undefined)).toBeNull();

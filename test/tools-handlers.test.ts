@@ -145,4 +145,61 @@ describe("tool handlers", () => {
     );
     expect(seen).toHaveLength(1);
   });
+
+  it("returns a tool error when prompts_read storage fails", () => {
+    const result = handlePromptsRead(
+      { path: "fetch.ts" },
+      {
+        storage: {
+          promptsDir,
+          append() {},
+          list() {
+            throw new Error("disk full");
+          },
+          getById() {
+            return null;
+          },
+        },
+      },
+    );
+    expect(result.text).toContain("prompts_read failed internally");
+    expect(result.details.error).toBe(true);
+  });
+
+  it("falls back to the stored record when prompts_chain throws", () => {
+    const stored = record(
+      {
+        model: "test",
+        prompt: "portable prompt",
+        targets: [{ path: "x.ts", links: [{ type: "file" }] }],
+      },
+      { promptsDir },
+    );
+
+    let calls = 0;
+    const result = handlePromptsChain(
+      { recordId: stored.id },
+      {
+        storage: {
+          promptsDir,
+          append() {},
+          list() {
+            return [];
+          },
+          getById(id: string) {
+            calls += 1;
+            if (calls === 1) {
+              throw new Error("walk failed");
+            }
+            return id === stored.id ? stored : null;
+          },
+        },
+      },
+    );
+
+    expect(result.text).toContain("portable prompt");
+    expect(result.text).toContain("prompts_chain failed");
+    expect(result.details.error).toBe(true);
+    expect(result.details.recordIds).toEqual([stored.id]);
+  });
 });

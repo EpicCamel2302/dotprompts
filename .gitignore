@@ -18,3 +18,7 @@ dist/
 Thumbs.db
 .idea/
 .cursor/
+
+# ephemeral test fixtures
+tmp-dot-prompts-*/
+tmp-git-probe-*/
