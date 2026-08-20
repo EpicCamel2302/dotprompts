@@ -1,13 +1,9 @@
-# dot-prompts pi extension
+# Pi extension
 
-See [docs/pi-extension.md](../docs/pi-extension.md) for full documentation.
-
-## Quick setup
+See [docs/usage/pi.md](../../docs/usage/pi.md).
 
 ```bash
 npm run build
 cd extensions/pi && npm install
 pi -e ./extensions/pi/dot-prompts.ts
 ```
-
-Agents: read [AGENTS.md](../AGENTS.md) for the drill-down workflow.

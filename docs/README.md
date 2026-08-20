@@ -1,34 +1,29 @@
-# dot-prompts documentation
+# Documentation
 
-Provenance and observability for LLM-generated code edits.
+## Use
 
-## For humans
-
-| Document | Description |
-|---|---|
-| [Overview](overview.md) | Goals, design principles, architecture |
-| [Schema reference](schema.md) | Record format, fields, validation rules |
-| [Link types](link-types.md) | Typed link registry and lookup confidence |
-| [CLI reference](cli.md) | `dot-prompts` command-line usage |
-| [MCP server](mcp.md) | Portable opt-in tools (`prompts_read` / `chain` / `trace`) |
-| [Harness integration](harness-integration.md) | Building record/lookup into agent harnesses |
-| [Pi extension](pi-extension.md) | Automatic capture with pi coding agent |
-
-## For agents and LLMs
+For installing and running dot-prompts in a project.
 
 | Document | Description |
 |---|---|
-| [../AGENTS.md](../AGENTS.md) | Agent workflow: notice → read → trace (start here) |
+| [Overview](usage/overview.md) | What `.prompts/` stores and how agents see it |
+| [CLI](usage/cli.md) | `dot-prompts` commands |
+| [MCP](usage/mcp.md) | Portable tools for MCP clients |
+| [Pi](usage/pi.md) | Automatic capture with the pi coding agent |
+| [Schema](usage/schema.md) | Record format |
+| [Link types](usage/link-types.md) | Location pointers and lookup scoring |
 
-## Examples
+JSON Schemas: [`schemas/record.v1.json`](../schemas/record.v1.json), [`schemas/link.v1.json`](../schemas/link.v1.json).
+
+## Develop
+
+For building on this codebase (library API, harnesses, internals).
 
 | Document | Description |
 |---|---|
-| [../examples/footgun/SCENARIO.md](../examples/footgun/SCENARIO.md) | Validation scenario and test results |
+| [Architecture](development/architecture.md) | Layout, storage, tools, conventions |
+| [Harnesses](development/harness.md) | Recording, notices, and opt-in tools |
 
-## JSON Schemas
+Coding agents working in this repository: [AGENTS.md](../AGENTS.md).
 
-Machine-readable schemas live in [`../schemas/`](../schemas/):
-
-- [`record.v1.json`](../schemas/record.v1.json)
-- [`link.v1.json`](../schemas/link.v1.json)
+History of changes: [CHANGELOG.md](../CHANGELOG.md).

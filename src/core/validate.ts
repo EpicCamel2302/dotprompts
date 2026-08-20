@@ -1,12 +1,11 @@
 import Ajv2020Module from "ajv/dist/2020.js";
 import addFormatsModule from "ajv-formats";
 import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
+import { packageRoot } from "./package-root.js";
 import type { PromptRecord } from "./types.js";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const schemasDir = join(__dirname, "..", "schemas");
+const schemasDir = join(packageRoot(), "schemas");
 
 const linkSchema = JSON.parse(
   readFileSync(join(schemasDir, "link.v1.json"), "utf8"),

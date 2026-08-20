@@ -1,18 +1,21 @@
 #!/usr/bin/env node
 
-import {
-  resolvePromptsDirFromEnv,
-  startDotPromptsMcpServer,
-} from "./server.js";
+import { isMissingMcpPeer, MCP_PEER_HINT } from "./peers.js";
 
 async function main(): Promise<void> {
-  const promptsDir = resolvePromptsDirFromEnv();
-  await startDotPromptsMcpServer(
-    promptsDir !== undefined ? { promptsDir } : {},
+  const { resolvePromptsDirFromEnv, startDotPromptsMcpServer } = await import(
+    "./server.js"
   );
+  await startDotPromptsMcpServer({
+    promptsDir: resolvePromptsDirFromEnv(),
+  });
 }
 
 main().catch((error) => {
+  if (isMissingMcpPeer(error)) {
+    process.stderr.write(`${MCP_PEER_HINT}\n`);
+    process.exit(1);
+  }
   const message = error instanceof Error ? error.message : String(error);
   process.stderr.write(`dot-prompts-mcp failed: ${message}\n`);
   process.exit(1);

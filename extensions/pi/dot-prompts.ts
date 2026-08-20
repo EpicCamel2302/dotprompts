@@ -13,22 +13,19 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { isToolCallEventType } from "@earendil-works/pi-coding-agent";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { Type } from "@sinclair/typebox";
+import { Type, type TSchema } from "@sinclair/typebox";
 import {
-  collectProvenanceChain,
+  TOOL_CATALOG,
   extractLinksFromEdit,
   extractLinksFromWrite,
-  formatLookupForAgent,
   formatLookupNotice,
-  formatProvenanceChainForAgent,
-  formatRecordOnlyFallback,
-  get,
-  getPiMetadata,
-  lookup,
+  handlePromptsChain,
+  handlePromptsRead,
   lookupForReadRange,
   record,
-  tracePiSession,
+  type ToolParam,
 } from "dot-prompts";
+import { handlePromptsTrace } from "dot-prompts/pi";
 import {
   capturePiMetadata,
   findLatestUserMessageId,
@@ -53,20 +50,18 @@ function noteReferencedRecords(...ids: Array<string | undefined>): void {
   }
 }
 
-function toolFailure(toolName: string, error: unknown, extra?: string): {
-  content: Array<{ type: "text"; text: string }>;
-  details: { error: true; tool: string; message: string };
-} {
-  const message = error instanceof Error ? error.message : String(error);
-  const lines = [
-    `${toolName} failed internally (${message}).`,
-    extra ??
-      "Use prompts_read for portable prompt text, or read `.prompts/records/` if you already have a record id.",
-  ];
-  return {
-    content: [{ type: "text", text: lines.join("\n") }],
-    details: { error: true, tool: toolName, message },
-  };
+function typeboxFromParams(params: readonly ToolParam[]): TSchema {
+  const properties: Record<string, TSchema> = {};
+  for (const param of params) {
+    const schema =
+      param.type === "string"
+        ? Type.String({ description: param.description })
+        : Type.Number({ description: param.description });
+    properties[param.name] = param.required
+      ? schema
+      : Type.Optional(schema);
+  }
+  return Type.Object(properties);
 }
 
 function modelSlug(ctx: { model?: { provider?: string; id?: string } }): string {
@@ -95,7 +90,7 @@ function buildRecordMetadata(
   };
 }
 
-export default function (pi: ExtensionAPI) {
+export function registerDotPromptsExtension(pi: ExtensionAPI): void {
   registerPromptsCommands(pi);
 
   pi.on("before_agent_start", async (event) => {
@@ -104,6 +99,7 @@ export default function (pi: ExtensionAPI) {
 
   pi.on("agent_start", async (_event, ctx) => {
     referencedRecordIds.clear();
+    contentBeforeEdit.clear();
     currentModel = modelSlug(ctx);
     currentUserMessageId = findLatestUserMessageId(
       ctx.sessionManager,
@@ -214,241 +210,59 @@ export default function (pi: ExtensionAPI) {
     }
   });
 
+  const read = TOOL_CATALOG.prompts_read;
   pi.registerTool({
-    name: "prompts_read",
-    label: "dot-prompts read",
-    description:
-      "Fetch dot-prompts provenance (prior user prompts) for a file or region. Use when [dot-prompts] notices indicate relevant history.",
-    parameters: Type.Object({
-      path: Type.String({ description: "File path to look up" }),
-      startLine: Type.Optional(
-        Type.Number({ description: "Start line of region (1-indexed)" }),
-      ),
-      endLine: Type.Optional(
-        Type.Number({ description: "End line of region (1-indexed)" }),
-      ),
-      symbol: Type.Optional(
-        Type.String({ description: "Symbol name to match" }),
-      ),
-      limit: Type.Optional(
-        Type.Number({ description: "Maximum records to return" }),
-      ),
-    }),
-    promptGuidelines: [
-      "Use prompts_read when a read result includes a [dot-prompts] notice and prior intent may affect your edit.",
-      "Skip prompts_read when doing a ground-up rewrite or when the notice is clearly irrelevant.",
-      "If a prompt is vague (e.g. execute plan), use prompts_trace with the record id to explore the pi session branch.",
-      "If a record references prior records or links may be stale after renames, use prompts_chain with the record id.",
-    ],
+    name: read.name,
+    label: read.title,
+    description: read.description,
+    parameters: typeboxFromParams(read.params),
+    promptGuidelines: [...read.guidelines],
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-      try {
-        const result = lookup(
-          {
-            path: params.path,
-            startLine: params.startLine,
-            endLine: params.endLine,
-            symbol: params.symbol,
-          },
-          { limit: params.limit ?? 5, minConfidence: 0.4 },
-        );
-
-        noteReferencedRecords(...result.matches.map((match) => match.record.id));
-
-        return {
-          content: [
-            {
-              type: "text",
-              text: formatLookupForAgent(result.matches),
-            },
-          ],
-          details: { matches: result.matches, cwd: ctx.cwd },
-        };
-      } catch (error) {
-        return toolFailure("prompts_read", error);
-      }
+      const result = handlePromptsRead(params, {
+        onReadRecords: (ids) => noteReferencedRecords(...ids),
+      });
+      return {
+        content: [{ type: "text", text: result.text }],
+        details: { ...result.details, cwd: ctx.cwd },
+      };
     },
   });
 
+  const trace = TOOL_CATALOG.prompts_trace;
   pi.registerTool({
-    name: "prompts_trace",
-    label: "dot-prompts trace",
-    description:
-      "Explore the pi session branch that produced a dot-prompts record. Use when the stored prompt is vague and you need surrounding conversation context. Falls back to record-only data if the session file is not available locally.",
-    parameters: Type.Object({
-      recordId: Type.Optional(
-        Type.String({
-          description:
-            "dot-prompts record UUID (loads pi session pointers from metadata)",
-        }),
-      ),
-      sessionFile: Type.Optional(
-        Type.String({ description: "Pi session JSONL file path" }),
-      ),
-      userMessageId: Type.Optional(
-        Type.String({ description: "Pi session user message entry id" }),
-      ),
-      maxEntries: Type.Optional(
-        Type.Number({ description: "Maximum branch entries to include" }),
-      ),
-    }),
-    promptGuidelines: [
-      "Use prompts_trace when prompts_read returns a vague prompt like execute plan or continue and a record id is available.",
-      "prompts_trace may fall back to prompt text only if the pi session file is missing on this machine.",
-    ],
+    name: trace.name,
+    label: trace.title,
+    description: trace.description,
+    parameters: typeboxFromParams(trace.params),
+    promptGuidelines: [...trace.guidelines],
     async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
-      let sessionFile = params.sessionFile;
-      let userMessageId = params.userMessageId;
-      let prompt: string | undefined;
-      let timestamp: string | undefined;
-      let model: string | undefined;
-      let recordId = params.recordId;
-
-      try {
-        if (params.recordId) {
-          const stored = get(params.recordId);
-          if (!stored) {
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: `No dot-prompts record found for id ${params.recordId}.`,
-                },
-              ],
-              details: { found: false },
-            };
-          }
-
-          prompt = stored.prompt;
-          timestamp = stored.timestamp;
-          model = stored.model;
-          const piMeta = getPiMetadata(stored.metadata);
-          sessionFile = sessionFile ?? piMeta?.sessionFile;
-          userMessageId = userMessageId ?? piMeta?.userMessageId;
-          recordId = stored.id;
-          noteReferencedRecords(recordId);
-        }
-
-        const trace = tracePiSession({
-          sessionFile,
-          userMessageId,
-          prompt,
-          timestamp,
-          model,
-          recordId,
-          maxEntries: params.maxEntries,
-        });
-
-        return {
-          content: [{ type: "text", text: trace.text }],
-          details: trace,
-        };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return {
-          content: [
-            {
-              type: "text",
-              text: formatRecordOnlyFallback({
-                prompt,
-                timestamp,
-                model,
-                recordId,
-                sessionFile,
-                reason: `prompts_trace could not load the pi session (${message}). Portable prompt text from .prompts/ is shown instead.`,
-              }),
-            },
-          ],
-          details: { error: true, tool: "prompts_trace", message },
-        };
-      }
+      const result = handlePromptsTrace(params, {
+        onReadRecords: (ids) => noteReferencedRecords(...ids),
+      });
+      return {
+        content: [{ type: "text", text: result.text }],
+        details: result.details,
+      };
     },
   });
 
+  const chain = TOOL_CATALOG.prompts_chain;
   pi.registerTool({
-    name: "prompts_chain",
-    label: "dot-prompts chain",
-    description:
-      "Walk the provenance chain from a record id through metadata.referencedRecords — recovers intent across renames and broken symbol/file links. Traverses the full chain by default; pass maxDepth or maxRecords only to stop early.",
-    parameters: Type.Object({
-      recordId: Type.String({
-        description: "Starting record UUID (typically the newest match from prompts_read)",
-      }),
-      maxDepth: Type.Optional(
-        Type.Number({
-          description:
-            "Optional cap on hops from the start record. Omit to walk as deep as the chain goes.",
-        }),
-      ),
-      maxRecords: Type.Optional(
-        Type.Number({
-          description:
-            "Optional cap on total records returned. Omit for no limit.",
-        }),
-      ),
-    }),
-    promptGuidelines: [
-      "Use prompts_chain when prompts_read shows referencedRecords, symbol/file links may be stale, or you need the full stacked intent behind an edit.",
-      "Start from the newest matching record id; ancestors are followed automatically via referencedRecords.",
-      "Omit maxDepth and maxRecords unless you want to stop early — the default walks the entire chain.",
-      "For vague prompts in the chain, use prompts_trace on that specific record id.",
-    ],
+    name: chain.name,
+    label: chain.title,
+    description: chain.description,
+    parameters: typeboxFromParams(chain.params),
+    promptGuidelines: [...chain.guidelines],
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-      try {
-        const result = collectProvenanceChain([params.recordId], {
-          maxDepth: params.maxDepth,
-          maxRecords: params.maxRecords,
-        });
-
-        if (result.entries.length === 0) {
-          return {
-            content: [
-              {
-                type: "text",
-                text: `No dot-prompts record found for id ${params.recordId}.`,
-              },
-            ],
-            details: { found: false, recordId: params.recordId },
-          };
-        }
-
-        noteReferencedRecords(...result.entries.map((entry) => entry.record.id));
-
-        return {
-          content: [
-            {
-              type: "text",
-              text: formatProvenanceChainForAgent(result),
-            },
-          ],
-          details: { ...result, cwd: ctx.cwd },
-        };
-      } catch (error) {
-        const stored = get(params.recordId);
-        if (stored) {
-          noteReferencedRecords(stored.id);
-          return {
-            content: [
-              {
-                type: "text",
-                text: formatRecordOnlyFallback({
-                  prompt: stored.prompt,
-                  timestamp: stored.timestamp,
-                  model: stored.model,
-                  recordId: stored.id,
-                  reason:
-                    "prompts_chain failed while walking referencedRecords. Showing this record only — older intent may still exist via metadata.referencedRecords on the JSON in .prompts/records/.",
-                }),
-              },
-            ],
-            details: {
-              error: true,
-              tool: "prompts_chain",
-              message: error instanceof Error ? error.message : String(error),
-            },
-          };
-        }
-        return toolFailure("prompts_chain", error);
-      }
+      const result = handlePromptsChain(params, {
+        onReadRecords: (ids) => noteReferencedRecords(...ids),
+      });
+      return {
+        content: [{ type: "text", text: result.text }],
+        details: { ...result.details, cwd: ctx.cwd },
+      };
     },
   });
 }
+
+export default registerDotPromptsExtension;

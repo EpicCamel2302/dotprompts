@@ -2,9 +2,9 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createGitLink, toRepoRelativePath } from "./git.js";
 import { extractNearestSymbol } from "./symbols.js";
-import type { Link, Target } from "../types.js";
+import { getHarnessSessionPointers } from "../core/metadata.js";
+import type { Link, Target } from "../core/types.js";
 import { getReferencedRecordIds } from "../provenance/chain.js";
-import { getPiMetadata } from "../pi/trace.js";
 
 export type ExtractEditOptions = {
   cwd: string;
@@ -166,10 +166,11 @@ export function formatLookupForAgent(
   return matches
     .map((match, index) => {
       const stale = match.stale ? " (stale anchor)" : "";
-      const pi = getPiMetadata(match.record.metadata);
-      const traceHint = pi?.sessionFile || pi?.sessionId
-        ? "   trace: use prompts_trace with this record id for full session context"
-        : "";
+      const session = getHarnessSessionPointers(match.record.metadata);
+      const traceHint =
+        session?.sessionFile || session?.sessionId
+          ? "   trace: use prompts_trace with this record id for full session context"
+          : "";
       const refs = getReferencedRecordIds(match.record.metadata);
       const chainHint =
         refs.length > 0

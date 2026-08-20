@@ -1,38 +1,47 @@
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import { packageRoot } from "../core/package-root.js";
+import {
+  resolvePromptsDir,
+  resolvePromptsDirFromEnv,
+} from "../core/prompts-dir.js";
+import { TOOL_CATALOG, type ToolParam } from "../tools/catalog.js";
 import {
   handlePromptsChain,
   handlePromptsRead,
-  handlePromptsTrace,
+} from "../tools/handlers.js";
+import type {
+  PromptsChainParams,
+  PromptsReadParams,
 } from "../tools/handlers.js";
 
 export type McpServerOptions = {
   promptsDir?: string;
 };
 
-export function resolvePromptsDirFromEnv(
-  argv: string[] = process.argv.slice(2),
-  env: NodeJS.ProcessEnv = process.env,
-): string | undefined {
-  const flagIndex = argv.findIndex(
-    (arg) => arg === "--prompts-dir" || arg === "--promptsDir",
-  );
-  if (flagIndex >= 0 && argv[flagIndex + 1]) {
-    return argv[flagIndex + 1];
-  }
+/** Portable MCP tools. Session-file trace stays on the pi export and extension. */
+export const MCP_TOOLS = ["prompts_read", "prompts_chain"] as const;
 
-  const eqFlag = argv.find((arg) => arg.startsWith("--prompts-dir="));
-  if (eqFlag) {
-    return eqFlag.slice("--prompts-dir=".length);
-  }
+export { resolvePromptsDirFromEnv };
 
-  if (env.DOT_PROMPTS_DIR) {
-    return env.DOT_PROMPTS_DIR;
-  }
+function packageVersion(): string {
+  const pkg = JSON.parse(
+    readFileSync(join(packageRoot(), "package.json"), "utf8"),
+  ) as { version: string };
+  return pkg.version;
+}
 
-  return undefined;
+function zodShapeFromParams(params: readonly ToolParam[]) {
+  const shape: Record<string, z.ZodTypeAny> = {};
+  for (const param of params) {
+    const base = param.type === "string" ? z.string() : z.number();
+    const described = base.describe(param.description);
+    shape[param.name] = param.required ? described : described.optional();
+  }
+  return shape;
 }
 
 function toolResult(text: string) {
@@ -48,104 +57,39 @@ function toolResult(text: string) {
 export function createDotPromptsMcpServer(
   opts: McpServerOptions = {},
 ): McpServer {
-  const promptsDir =
-    opts.promptsDir ??
-    resolvePromptsDirFromEnv() ??
-    join(process.cwd(), ".prompts");
+  const promptsDir = opts.promptsDir
+    ? resolvePromptsDir(opts.promptsDir)
+    : resolvePromptsDirFromEnv();
 
   const server = new McpServer({
     name: "dot-prompts",
-    version: "0.1.0",
+    version: packageVersion(),
   });
 
+  const read = TOOL_CATALOG.prompts_read;
   server.registerTool(
-    "prompts_read",
+    read.name,
     {
-      title: "dot-prompts read",
-      description:
-        "Fetch dot-prompts provenance (prior user prompts) for a file or region. Use when [dot-prompts] notices indicate relevant history, or when editing code that may have intentional complexity.",
-      inputSchema: {
-        path: z.string().describe("File path to look up"),
-        startLine: z
-          .number()
-          .optional()
-          .describe("Start line of region (1-indexed)"),
-        endLine: z
-          .number()
-          .optional()
-          .describe("End line of region (1-indexed)"),
-        symbol: z.string().optional().describe("Symbol name to match"),
-        limit: z
-          .number()
-          .optional()
-          .describe("Maximum records to return (default 5)"),
-      },
+      title: read.title,
+      description: read.description,
+      inputSchema: zodShapeFromParams(read.params),
     },
     async (args) => {
-      const result = handlePromptsRead(args, { promptsDir });
+      const result = handlePromptsRead(args as PromptsReadParams, { promptsDir });
       return toolResult(result.text);
     },
   );
 
+  const chain = TOOL_CATALOG.prompts_chain;
   server.registerTool(
-    "prompts_chain",
+    chain.name,
     {
-      title: "dot-prompts chain",
-      description:
-        "Walk the provenance chain from a record id through metadata.referencedRecords — recovers intent across renames and broken symbol/file links. Traverses the full chain by default; pass maxDepth or maxRecords only to stop early.",
-      inputSchema: {
-        recordId: z
-          .string()
-          .describe(
-            "Starting record UUID (typically the newest match from prompts_read)",
-          ),
-        maxDepth: z
-          .number()
-          .optional()
-          .describe(
-            "Optional cap on hops from the start record. Omit to walk as deep as the chain goes.",
-          ),
-        maxRecords: z
-          .number()
-          .optional()
-          .describe("Optional cap on total records returned. Omit for no limit."),
-      },
+      title: chain.title,
+      description: chain.description,
+      inputSchema: zodShapeFromParams(chain.params),
     },
     async (args) => {
-      const result = handlePromptsChain(args, { promptsDir });
-      return toolResult(result.text);
-    },
-  );
-
-  server.registerTool(
-    "prompts_trace",
-    {
-      title: "dot-prompts trace",
-      description:
-        "Explore the pi session branch that produced a dot-prompts record. Use when the stored prompt is vague. Falls back to record-only prompt text if the session file is not available locally.",
-      inputSchema: {
-        recordId: z
-          .string()
-          .optional()
-          .describe(
-            "dot-prompts record UUID (loads pi session pointers from metadata)",
-          ),
-        sessionFile: z
-          .string()
-          .optional()
-          .describe("Pi session JSONL file path"),
-        userMessageId: z
-          .string()
-          .optional()
-          .describe("Pi session user message entry id"),
-        maxEntries: z
-          .number()
-          .optional()
-          .describe("Maximum branch entries to include"),
-      },
-    },
-    async (args) => {
-      const result = handlePromptsTrace(args, { promptsDir });
+      const result = handlePromptsChain(args as PromptsChainParams, { promptsDir });
       return toolResult(result.text);
     },
   );

@@ -1,6 +1,4 @@
-# CLI reference
-
-Install and build:
+# CLI
 
 ```bash
 npm install && npm run build
@@ -9,8 +7,10 @@ npm install && npm run build
 Global option (all commands):
 
 ```
---prompts-dir <path>   Path to .prompts directory (default: .prompts)
+--prompts-dir <path>   Path to .prompts directory (default: <cwd>/.prompts)
 ```
+
+Relative paths resolve against the process working directory. `DOT_PROMPTS_DIR` is an equivalent override.
 
 ## `record`
 
@@ -20,11 +20,9 @@ Append a provenance record from JSON on stdin.
 dot-prompts record [--file <path>]
 ```
 
-**Input:** JSON matching [record schema](schema.md). The CLI assigns `id` and `timestamp` if omitted.
+**Input:** JSON matching the [record schema](schema.md). The CLI assigns `id` and `timestamp` if omitted.
 
 **Output:** The validated record JSON on stdout.
-
-**Example:**
 
 ```bash
 echo '{
@@ -39,7 +37,7 @@ echo '{
 
 ## `lookup`
 
-Ranked search for prior records affecting a file/region/symbol/hashline.
+Ranked search by file, region, symbol, or hashline.
 
 ```bash
 dot-prompts lookup --path <path> [options]
@@ -64,7 +62,7 @@ Annotate a file with hashline anchors (`LINE#HASH`).
 dot-prompts read <path> [--format json|human]
 ```
 
-Used by harnesses that need line-level hashes. Default output is JSON:
+Default output is JSON:
 
 ```json
 {
@@ -75,8 +73,6 @@ Used by harnesses that need line-level hashes. Default output is JSON:
 
 ## `list`
 
-List records with optional filters.
-
 ```bash
 dot-prompts list [--limit N] [--since ISO] [--path PATH] [--model MODEL]
 ```
@@ -84,8 +80,6 @@ dot-prompts list [--limit N] [--since ISO] [--path PATH] [--model MODEL]
 **Output:** `{ "records": [...] }`
 
 ## `get`
-
-Fetch a single record by UUID.
 
 ```bash
 dot-prompts get <id>
@@ -95,7 +89,7 @@ Exits 1 with `{ "error": "not_found" }` if missing.
 
 ## `chain`
 
-Walk `metadata.referencedRecords` from one or more starting record ids. Traverses the **full chain by default** (no depth cap).
+Walk `metadata.referencedRecords` from one or more record ids. Traverses the full chain unless you pass a cap.
 
 ```bash
 dot-prompts chain <id> [more-ids...] [--format json|text] [--max-depth N] [--max-records N]
@@ -103,13 +97,11 @@ dot-prompts chain <id> [more-ids...] [--format json|text] [--max-depth N] [--max
 
 **Output (json):** `{ "entries": [{ "record", "depth", "via?" }], "truncated", "missingIds" }`
 
-**Output (text):** Human-readable stacked prompts with targets and references.
-
-Use when symbol/file links are stale but UUID references remain. Pass `--max-depth` or `--max-records` only to stop early.
+**Output (text):** Stacked prompts with targets and references.
 
 ## `context`
 
-Compact summary for agent context injection.
+Compact summary of recent records.
 
 ```bash
 dot-prompts context [--limit N] [--since ISO] [--path PATH] [--model MODEL]

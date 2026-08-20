@@ -1,5 +1,5 @@
-import { getRecordById, readAllRecords } from "../storage.js";
-import type { Link, PromptRecord, Target } from "../types.js";
+import { resolveStorage, type StoreOptions } from "../core/storage.js";
+import type { Link, PromptRecord, Target } from "../core/types.js";
 
 export function getReferencedRecordIds(
   metadata: Record<string, unknown> | undefined,
@@ -14,8 +14,7 @@ export function getReferencedRecordIds(
   return refs.filter((id): id is string => typeof id === "string");
 }
 
-export type ProvenanceChainOptions = {
-  promptsDir?: string;
+export type ProvenanceChainOptions = StoreOptions & {
   /** Stop after this many hops from the root. Omit for no limit. */
   maxDepth?: number;
   /** Stop after this many records total. Omit for no limit. */
@@ -59,7 +58,8 @@ export function collectProvenanceChain(
   rootIds: string[],
   opts: ProvenanceChainOptions = {},
 ): ProvenanceChainResult {
-  const { maxDepth, maxRecords, promptsDir } = opts;
+  const { maxDepth, maxRecords } = opts;
+  const storage = resolveStorage(opts);
   const seen = new Set<string>();
   const missingIds = new Set<string>();
   const result: ProvenanceChainEntry[] = [];
@@ -82,7 +82,7 @@ export function collectProvenanceChain(
     }
     seen.add(id);
 
-    const record = getRecordById(id, promptsDir);
+    const record = storage.getById(id);
     if (!record) {
       missingIds.add(id);
       return;
@@ -180,9 +180,11 @@ export function formatProvenanceChainForAgent(
 
 export function findRecordsReferencing(
   targetId: string,
-  opts?: { promptsDir?: string },
+  opts?: StoreOptions,
 ): PromptRecord[] {
-  return readAllRecords(opts?.promptsDir).filter((record) =>
-    getReferencedRecordIds(record.metadata).includes(targetId),
-  );
+  return resolveStorage(opts)
+    .list()
+    .filter((record) =>
+      getReferencedRecordIds(record.metadata).includes(targetId),
+    );
 }
