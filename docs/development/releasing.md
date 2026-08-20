@@ -46,6 +46,17 @@ git push origin v0.2.0
 
 Only commits **after** that baseline (with conventional prefixes) feed the next Release PR.
 
+### Allow Actions to open Release PRs
+
+If the workflow fails with *GitHub Actions is not permitted to create or approve pull requests*, enable it in the repo:
+
+**Settings → Actions → General → Workflow permissions**
+
+- Check **Allow GitHub Actions to create and approve pull requests**
+- Keep **Read and write permissions** (needed for tags/releases)
+
+Then re-run the failed Release Please workflow from the Actions tab.
+
 ## Manual changelog notes
 
 You can still edit the Release PR’s changelog section before merging if a commit message is too terse. Day-to-day “Unreleased” bullets are optional once Conventional Commits are the source of truth; release-please owns the versioned sections of `CHANGELOG.md`.
