@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  anchorsEqual,
   annotateContent,
   computeLineHash,
   resolveAnchor,
+  sha256Content,
+  sha256File,
+  splitLines,
 } from "../src/core/hashline.js";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -23,6 +27,29 @@ describe("hashline", () => {
       { line: 1, hash: computeLineHash("alpha"), content: "alpha" },
       { line: 2, hash: computeLineHash("beta"), content: "beta" },
     ]);
+  });
+
+  it("splits lines with and without trailing newlines", () => {
+    expect(splitLines("")).toEqual({ lines: [], trailingNewline: false });
+    expect(splitLines("\n")).toEqual({ lines: [], trailingNewline: true });
+    expect(splitLines("a\nb")).toEqual({
+      lines: ["a", "b"],
+      trailingNewline: false,
+    });
+    expect(splitLines("a\nb\n")).toEqual({
+      lines: ["a", "b"],
+      trailingNewline: true,
+    });
+  });
+
+  it("compares anchors and hashes file content", () => {
+    expect(anchorsEqual({ line: 1, hash: "ab" }, { line: 1, hash: "ab" })).toBe(
+      true,
+    );
+    expect(anchorsEqual({ line: 1, hash: "ab" }, { line: 2, hash: "ab" })).toBe(
+      false,
+    );
+    expect(sha256Content("hello")).toMatch(/^[0-9a-f]{64}$/);
   });
 });
 
@@ -49,5 +76,19 @@ describe("resolveAnchor", () => {
     const invalid = resolveAnchor(filePath, { line: 1, hash: "00" });
     expect(invalid.valid).toBe(false);
     expect(invalid.content).toBe("first line");
+  });
+
+  it("marks out-of-range lines invalid", () => {
+    expect(resolveAnchor(filePath, { line: 99, hash: "ab" })).toEqual({
+      content: "",
+      valid: false,
+      currentHash: "",
+    });
+  });
+
+  it("hashes file contents via sha256File", () => {
+    expect(sha256File(filePath)).toBe(
+      sha256Content("first line\nsecond line\n"),
+    );
   });
 });

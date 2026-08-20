@@ -1,10 +1,21 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createJsonlStorage } from "../src/core/storage.js";
+import {
+  createJsonlStorage,
+  HISTORY_FILE,
+  mirrorFilename,
+  RECORDS_DIR,
+} from "../src/core/storage.js";
 import { record } from "../src/core/record.js";
-import { context, get, list, lookup } from "../src/core/query.js";
+import {
+  context,
+  get,
+  list,
+  lookup,
+  lookupForReadRange,
+} from "../src/core/query.js";
 
 describe("storage and ranked lookup", () => {
   let promptsDir: string;
@@ -139,5 +150,70 @@ describe("storage and ranked lookup", () => {
       paths: ["src/api/fetch.ts"],
       linkCount: 3,
     });
+  });
+
+  it("filters list by model, since, and limit", () => {
+    const older = record(
+      {
+        ...sampleInput,
+        model: "old-model",
+        timestamp: "2026-01-01T00:00:00.000Z",
+        prompt: "older",
+      },
+      { promptsDir },
+    );
+    const newer = record(
+      {
+        ...sampleInput,
+        model: "new-model",
+        timestamp: "2026-06-01T00:00:00.000Z",
+        prompt: "newer",
+      },
+      { promptsDir },
+    );
+
+    expect(list({ promptsDir, model: "new-model" }).map((r) => r.id)).toEqual([
+      newer.id,
+    ]);
+    expect(
+      list({ promptsDir, since: "2026-03-01T00:00:00.000Z" }).map((r) => r.id),
+    ).toEqual([newer.id]);
+    expect(list({ promptsDir, limit: 1 })[0]?.id).toBe(newer.id);
+    expect(older.id).toBeTruthy();
+  });
+
+  it("normalizes path separators for list and lookup", () => {
+    record(sampleInput, { promptsDir });
+    expect(list({ promptsDir, path: "src\\api\\fetch.ts" })).toHaveLength(1);
+    expect(
+      lookup({ path: "src\\api\\fetch.ts" }, { promptsDir }).matches,
+    ).toHaveLength(1);
+  });
+
+  it("maps read ranges via lookupForReadRange", () => {
+    record(sampleInput, { promptsDir });
+    const ranged = lookupForReadRange("src/api/fetch.ts", 42, 4, {
+      promptsDir,
+    });
+    expect(ranged.matches[0]?.confidence).toBe(0.7);
+
+    const openEnded = lookupForReadRange("src/api/fetch.ts", 40, undefined, {
+      promptsDir,
+    });
+    expect(openEnded.matches.length).toBeGreaterThan(0);
+  });
+
+  it("returns empty list for missing history and writes mirrors", () => {
+    const storage = createJsonlStorage(promptsDir);
+    expect(storage.list()).toEqual([]);
+    expect(existsSync(join(promptsDir, HISTORY_FILE))).toBe(false);
+
+    const saved = record(sampleInput, { storage });
+    expect(readFileSync(join(promptsDir, HISTORY_FILE), "utf8")).toContain(
+      saved.id,
+    );
+    const mirror = join(promptsDir, RECORDS_DIR, mirrorFilename(saved));
+    expect(existsSync(mirror)).toBe(true);
+    expect(JSON.parse(readFileSync(mirror, "utf8")).id).toBe(saved.id);
   });
 });

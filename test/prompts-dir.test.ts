@@ -120,6 +120,40 @@ describe("findStore", () => {
     expect(resolved.configPath).toBe(join(promptsDir, "config.json"));
   });
 
+  it("honors storage.path on nested .prompts/config.json", () => {
+    const pkg = join(root, "packages", "nested-path");
+    const promptsDir = join(pkg, PROMPTS_DIR_NAME);
+    mkdirSync(promptsDir, { recursive: true });
+    writeFileSync(
+      join(promptsDir, "config.json"),
+      JSON.stringify({
+        version: 1,
+        storage: { driver: "jsonl", path: "alt-store" },
+      }),
+      "utf8",
+    );
+
+    const resolved = findStore({
+      filePath: join(pkg, "index.ts"),
+      cwd: root,
+    });
+    expect(resolved.promptsDir).toBe(join(pkg, "alt-store"));
+  });
+
+  it("treats a directory filePath as the walk start", () => {
+    const pkg = join(root, "packages", "dir-start");
+    mkdirSync(pkg, { recursive: true });
+    writeFileSync(
+      join(pkg, CONFIG_FILE_PRIMARY),
+      JSON.stringify({ version: 1, storage: { driver: "jsonl" } }),
+      "utf8",
+    );
+
+    const resolved = findStore({ filePath: pkg, cwd: root });
+    expect(resolved.rootDir).toBe(pkg);
+    expect(resolved.promptsDir).toBe(join(pkg, PROMPTS_DIR_NAME));
+  });
+
   it("stops at .git and defaults to <gitRoot>/.prompts", () => {
     const nested = join(root, "src", "deep");
     mkdirSync(nested, { recursive: true });

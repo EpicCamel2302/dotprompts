@@ -322,4 +322,72 @@ describe("pi extension", () => {
       "prompts_trace",
     ]);
   });
+
+  it("skips failed tool results and does not record them", async () => {
+    const fake = await startExtension("edit that fails");
+    mkdirSync(join(cwd, "src"));
+    writeFileSync(join(cwd, "src/retry.ts"), "const n = 1;\n", "utf8");
+
+    await fake.emit("tool_call", {
+      toolCallId: "edit-fail",
+      toolName: "edit",
+      input: { path: "src/retry.ts", edits: [] },
+    });
+    await fake.emit("tool_result", {
+      toolCallId: "edit-fail",
+      toolName: "edit",
+      isError: true,
+      input: { path: "src/retry.ts" },
+      content: [],
+      details: { patch: "@@ -1,1 +1,1 @@\n-a\n+b" },
+    });
+
+    await endGeneration(fake);
+    expect(list()).toHaveLength(0);
+  });
+
+  it("flushes buffered edits on session_shutdown", async () => {
+    const fake = await startExtension("flush on shutdown");
+    mkdirSync(join(cwd, "src"));
+    writeFileSync(join(cwd, "src/retry.ts"), "const n = 1;\n", "utf8");
+
+    await fake.emit("tool_call", {
+      toolCallId: "edit-1",
+      toolName: "edit",
+      input: {
+        path: "src/retry.ts",
+        edits: [{ oldText: "const n = 1;", newText: "const n = 3;" }],
+      },
+    });
+    writeFileSync(join(cwd, "src/retry.ts"), "const n = 3;\n", "utf8");
+    await fake.emit("tool_result", {
+      toolCallId: "edit-1",
+      toolName: "edit",
+      isError: false,
+      input: { path: "src/retry.ts" },
+      content: [],
+      details: {
+        patch: "@@ -1,1 +1,1 @@\n-const n = 1;\n+const n = 3;",
+        firstChangedLine: 1,
+      },
+    });
+
+    await fake.emit("session_shutdown");
+    const records = list();
+    expect(records).toHaveLength(1);
+    expect(records[0]?.prompt).toBe("flush on shutdown");
+  });
+
+  it("does not append a notice when read has no matches", async () => {
+    const fake = await startExtension();
+    writeFileSync(join(cwd, "empty.ts"), "export {};\n", "utf8");
+    const result = await fake.emit("tool_result", {
+      toolCallId: "read-1",
+      toolName: "read",
+      isError: false,
+      input: { path: "empty.ts" },
+      content: [{ type: "text", text: "export {};" }],
+    });
+    expect(result).toBeUndefined();
+  });
 });
