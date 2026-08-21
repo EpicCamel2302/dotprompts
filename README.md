@@ -6,7 +6,7 @@ Git stores *what* changed. `.prompts/` stores *why*.
 
 ## Why dot-prompts
 
-When an agent edits a file, the reason lives in the chat: a product constraint, an API quirk, a workaround. That context disappears when the session ends, or when someone else — human or agent — next opens the code. The result looks like unexplained complexity, and the next pass often "simplifies" it away.
+When an agent edits a file, the reason lives in the chat: a product constraint, an API quirk, a workaround. That context disappears when the session ends, or when someone else (human or agent) next opens the code. The result looks like unexplained complexity, and the next pass often "simplifies" it away.
 
 dot-prompts keeps a small, append-only log in `.prompts/` beside the repo. Each entry points at *where* an edit landed and stores the user prompt that caused it. Git still owns the diffs. Agents can be told that history exists, then fetch it only when they need it.
 
