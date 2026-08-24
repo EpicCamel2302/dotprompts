@@ -1,4 +1,4 @@
-import type { Target } from "./types.js";
+import type { Link, RegionLink, Target } from "./types.js";
 
 export type GenerationTool = "edit" | "write";
 
@@ -24,9 +24,72 @@ export function normalizeTargetPath(path: string): string {
   return path.replace(/\\/g, "/");
 }
 
+/** Stable key for deduplicating non-region links when merging edits to the same path. */
+function linkIdentity(link: Exclude<Link, RegionLink>): string {
+  switch (link.type) {
+    case "file":
+      return "file";
+    case "git":
+      return `git:${link.commit}`;
+    case "symbol":
+      return `symbol:${link.name}:${link.kind ?? ""}`;
+    case "hashline":
+      return `hashline:${link.line}:${link.hash}`;
+  }
+}
+
+function regionContains(outer: RegionLink, inner: RegionLink): boolean {
+  return (
+    outer.startLine <= inner.startLine && outer.endLine >= inner.endLine
+  );
+}
+
 /**
- * Last-edit-wins merge by target path.
- * Replaces an existing entry for the same path; otherwise appends.
+ * Drop nested regions; keep a wider region that subsumes narrower ones.
+ * Partial overlaps and disjoint ranges stay as separate links.
+ */
+function mergeRegionLink(merged: Link[], next: RegionLink): Link[] {
+  const regions = merged.filter(
+    (link): link is RegionLink => link.type === "region",
+  );
+  if (regions.some((region) => regionContains(region, next))) {
+    return merged;
+  }
+  const withoutContained = merged.filter(
+    (link) => !(link.type === "region" && regionContains(next, link)),
+  );
+  return [...withoutContained, next];
+}
+
+/**
+ * Union links from successive edits to the same file (first-seen order).
+ * Regions collapse on containment; other link types are identity-deduped.
+ */
+export function mergeTargetLinks(existing: Link[], next: Link[]): Link[] {
+  let merged = existing.slice();
+  const seen = new Set(
+    existing
+      .filter((link): link is Exclude<Link, RegionLink> => link.type !== "region")
+      .map(linkIdentity),
+  );
+  for (const link of next) {
+    if (link.type === "region") {
+      merged = mergeRegionLink(merged, link);
+      continue;
+    }
+    const key = linkIdentity(link);
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    merged.push(link);
+  }
+  return merged;
+}
+
+/**
+ * Upsert by target path, merging links from prior entries for that path.
+ * Reuses the first-seen path string; otherwise appends.
  */
 export function upsertTargetByPath(
   targets: Target[],
@@ -39,8 +102,12 @@ export function upsertTargetByPath(
   if (index === -1) {
     return [...targets, next];
   }
+  const prior = targets[index]!;
   const updated = targets.slice();
-  updated[index] = next;
+  updated[index] = {
+    path: prior.path,
+    links: mergeTargetLinks(prior.links, next.links),
+  };
   return updated;
 }
 
@@ -82,8 +149,13 @@ export class GenerationRecordBuffer {
     const key = normalizeTargetPath(entry.target.path);
     const existing = this.entries.get(key);
     this.entries.set(key, {
-      target: entry.target,
-      filePath: entry.filePath,
+      target: existing
+        ? {
+            path: existing.target.path,
+            links: mergeTargetLinks(existing.target.links, entry.target.links),
+          }
+        : entry.target,
+      filePath: existing?.filePath ?? entry.filePath,
       order: existing?.order ?? this.nextOrder++,
     });
     this.tools.push(entry.tool);

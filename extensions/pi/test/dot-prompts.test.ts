@@ -224,16 +224,16 @@ describe("pi extension", () => {
   });
 
 
-  it("coalesces multiple edits of the same file into one record (last-edit wins)", async () => {
+  it("coalesces multiple edits of the same file into one record (merges links)", async () => {
     const fake = await startExtension("tweak retry.ts");
-    writeFileSync(join(cwd, "retry.ts"), "const n = 1;\n", "utf8");
+    writeFileSync(join(cwd, "retry.ts"), "const n = 1;\nconst m = 1;\n", "utf8");
 
     await fake.emit("tool_call", {
       toolCallId: "edit-1",
       toolName: "edit",
       input: { path: "retry.ts" },
     });
-    writeFileSync(join(cwd, "retry.ts"), "const n = 2;\n", "utf8");
+    writeFileSync(join(cwd, "retry.ts"), "const n = 2;\nconst m = 1;\n", "utf8");
     await fake.emit("tool_result", {
       toolCallId: "edit-1",
       toolName: "edit",
@@ -251,7 +251,7 @@ describe("pi extension", () => {
       toolName: "edit",
       input: { path: "retry.ts" },
     });
-    writeFileSync(join(cwd, "retry.ts"), "const n = 3;\n", "utf8");
+    writeFileSync(join(cwd, "retry.ts"), "const n = 2;\nconst m = 3;\n", "utf8");
     await fake.emit("tool_result", {
       toolCallId: "edit-2",
       toolName: "edit",
@@ -259,8 +259,8 @@ describe("pi extension", () => {
       input: { path: "retry.ts" },
       content: [],
       details: {
-        patch: "@@ -1,1 +1,1 @@\n-const n = 2;\n+const n = 3;",
-        firstChangedLine: 1,
+        patch: "@@ -2,1 +2,1 @@\n-const m = 1;\n+const m = 3;",
+        firstChangedLine: 2,
       },
     });
 
@@ -269,6 +269,13 @@ describe("pi extension", () => {
     expect(records).toHaveLength(1);
     expect(records[0]?.targets).toHaveLength(1);
     expect(records[0]?.targets[0]?.path).toBe("retry.ts");
+    expect(records[0]?.targets[0]?.links).toEqual(
+      expect.arrayContaining([
+        { type: "file" },
+        expect.objectContaining({ type: "region", startLine: 1 }),
+        expect.objectContaining({ type: "region", startLine: 2 }),
+      ]),
+    );
     expect(records[0]?.metadata).toMatchObject({
       tool: "edit",
       pi: { toolCallId: "edit-2", toolCallIds: ["edit-1", "edit-2"] },

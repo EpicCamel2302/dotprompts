@@ -24,10 +24,10 @@ The extension imports `dot-prompts` and `dot-prompts/pi` from the built package,
 
 ## What it does
 
-On each successful `edit` or `write` during a generation, buffers a target (last-edit wins per file). When the agent generation ends (`agent_end`):
+On each successful `edit` or `write` during a generation, buffers a target (links from repeated edits to the same file are merged). When the agent generation ends (`agent_end`):
 
 1. Captures the user prompt for the generation
-2. Derives `file`, `region`, `git`, and `symbol` links from each patch (final links for files edited more than once)
+2. Derives `file`, `region`, `git`, and `symbol` links from each patch (merged when a file is edited more than once; nested regions collapse)
 3. Stores pi session pointers in `metadata.pi` (including `toolCallIds` when several tools wrote)
 4. Stores ids of records read this generation in `metadata.referencedRecords`
 5. Appends **one** record to the store discovered by walking up from the first edited file (`dotprompts.json` / `.prompts/config.json`, else `<gitRoot>/.prompts`)
