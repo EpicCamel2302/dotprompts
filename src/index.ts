@@ -1,6 +1,7 @@
 export { record, buildRecord } from "./core/record.js";
 export {
   GenerationRecordBuffer,
+  mergeTargetLinks,
   normalizeTargetPath,
   upsertTargetByPath,
 } from "./core/generation-buffer.js";

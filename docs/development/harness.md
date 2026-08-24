@@ -15,11 +15,11 @@ Wire record, read notices, and opt-in tools into an agent harness.
 
 A *generation* is one submitted user prompt (Pi: `before_agent_start` → `agent_end`), not each tool round inside the agent loop.
 
-1. On each successful edit/write: derive links and **upsert** into an in-generation buffer by path (last-edit wins for the same file)
+1. On each successful edit/write: derive links and **upsert** into an in-generation buffer by path (links from repeated edits to the same file are merged; nested regions collapse)
 2. On generation end (`agent_end`, with a safety flush on `session_shutdown` if needed): call `record` once with all buffered targets
 3. Skip flush when there is no user prompt, the turn is a history-summarize prompt, or the buffer is empty
 
-Shared helpers: `GenerationRecordBuffer`, `upsertTargetByPath` from `dot-prompts`.
+Shared helpers: `GenerationRecordBuffer`, `upsertTargetByPath`, `mergeTargetLinks` from `dot-prompts`.
 
 Call `record` with:
 
@@ -66,7 +66,7 @@ Both produce `file` and `region` links. Edit extraction also adds `git` and `sym
 
 Records store location pointers. Diffs live in git. Skip a record when there is no user prompt.
 
-One generation → one record. Multiple files become multiple `targets`. Repeated edits to the same file keep only the **last** link set for that path:
+One generation → one record. Multiple files become multiple `targets`. Repeated edits to the same file **merge** their links onto that path's target (deduped; nested regions collapse into the wider span, disjoint regions stay separate):
 
 ```json
 {
