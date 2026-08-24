@@ -1,6 +1,6 @@
 {
   "name": "dot-prompts",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Provenance and observability for LLM-generated code edits",
   "type": "module",
   "main": "./dist/index.js",

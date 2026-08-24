@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/EpicCamel2302/dotprompts/compare/v0.3.0...v0.3.1) (2026-08-24)
+
+
+### Bug Fixes
+
+* merge generation-buffer links across same-path edits ([#32](https://github.com/EpicCamel2302/dotprompts/issues/32)) ([975ff69](https://github.com/EpicCamel2302/dotprompts/commit/975ff69d26c85f0ec94597d6aa284cddf624c3b0))
+
 ## [0.3.0](https://github.com/EpicCamel2302/dotprompts/compare/v0.2.0...v0.3.0) (2026-08-20)
 
 
