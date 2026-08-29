@@ -13,7 +13,7 @@ dot-prompts links user prompts to the file locations they shaped, so later work 
 The publishable core library and CLIs:
 
 - **Library** (`dot-prompts`): record, lookup, store discovery, shared tool handlers
-- **CLI** (`dot-prompts`): `record`, `lookup`, `list`, `get`, `chain`, …
+- **CLI** (`dot-prompts`): `init`, `record`, `lookup`, `list`, `get`, `chain`, …
 - **MCP** (`dot-prompts/mcp` / `dot-prompts-mcp`): `prompts_read` and `prompts_chain` for MCP clients
 
 Harness adapters (automatic capture, read notices) live in separate packages. For [pi](https://github.com/earendil-works/pi), use [`@dot-prompts/pi`](https://www.npmjs.com/package/@dot-prompts/pi).
@@ -41,6 +41,11 @@ npm install @modelcontextprotocol/sdk zod
 ### CLI
 
 ```bash
+# Non-git trees: create dotprompts.json + .prompts/ (optional path for a nested package)
+npx dot-prompts init
+npx dot-prompts init packages/api
+
+# Record / query (see docs for full JSON shapes and flags)
 echo '{ "model": "…", "prompt": "…", "targets": […] }' | npx dot-prompts record
 npx dot-prompts lookup --path src/foo.ts
 npx dot-prompts list --path src/foo.ts
@@ -51,7 +56,11 @@ Global option: `--prompts-dir <path>` skips store discovery. Full command list: 
 ### Library
 
 ```ts
-import { record, lookup } from "dot-prompts";
+import { record, lookup, initStore } from "dot-prompts";
+
+// Outside a git repo, init once before the first record
+initStore({ cwd: process.cwd() });
+// Or: initStore({ cwd: process.cwd(), path: "packages/api" });
 
 record(
   {
@@ -78,7 +87,9 @@ Point your client at that command (or the installed bin) with `cwd` set to the p
 
 ### Store location
 
-Walk-up from the edited or read file: prefer `dotprompts.json` or `.prompts/config.json`, else `<gitRoot>/.prompts`, else `<cwd>/.prompts`. Pass `{ promptsDir }` or `--prompts-dir` to pin a store.
+Walk-up from the edited or read file: prefer `dotprompts.json` or `.prompts/config.json`, else `<gitRoot>/.prompts`. Git roots and config-backed stores auto-create on first record. Outside git, run `dot-prompts init` (or `/prompts init` / `/prompts init <path>` in pi) first; a bare working directory is not auto-initialized.
+
+Pass `{ promptsDir }` or `--prompts-dir` to pin a store explicitly.
 
 ## Read more
 
