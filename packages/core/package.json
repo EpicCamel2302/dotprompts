@@ -21,7 +21,8 @@
   },
   "files": [
     "dist",
-    "schemas"
+    "schemas",
+    "README.md"
   ],
   "scripts": {
     "build": "tsc",
@@ -41,7 +42,7 @@
     "url": "git+https://github.com/EpicCamel2302/dotprompts.git",
     "directory": "packages/core"
   },
-  "homepage": "https://github.com/EpicCamel2302/dotprompts#readme",
+  "homepage": "https://github.com/EpicCamel2302/dotprompts/tree/main/packages/core#readme",
   "bugs": {
     "url": "https://github.com/EpicCamel2302/dotprompts/issues"
   },
