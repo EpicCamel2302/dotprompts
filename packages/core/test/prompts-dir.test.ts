@@ -282,6 +282,23 @@ describe("initStore / record gate", () => {
     expect(existsSync(join(root, PROMPTS_DIR_NAME, HISTORY_FILE))).toBe(true);
   });
 
+  it("initStore path nests the store under a relative directory", () => {
+    const resolved = initStore({ cwd: root, path: "packages/api" });
+    expect(resolved.rootDir).toBe(join(root, "packages", "api"));
+    expect(existsSync(join(root, "packages", "api", CONFIG_FILE_PRIMARY))).toBe(
+      true,
+    );
+    expect(resolved.source).toBe("config");
+  });
+
+  it("rejects initStore when path is an existing file", () => {
+    const filePath = join(root, "not-a-dir");
+    writeFileSync(filePath, "x\n", "utf8");
+    expect(() => initStore({ cwd: root, path: "not-a-dir" })).toThrow(
+      /not a directory/,
+    );
+  });
+
   it("auto-creates under a git root without prior init", () => {
     mkdirSync(join(root, ".git"));
     const filePath = join(root, "a.ts");

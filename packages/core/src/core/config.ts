@@ -48,8 +48,13 @@ export type FindStoreOptions = {
 };
 
 export type InitStoreOptions = {
-  /** Directory that receives `dotprompts.json` (defaults to cwd). */
+  /** Base directory for resolving relative `path` (defaults to process.cwd()). */
   cwd?: string;
+  /**
+   * Directory that receives `dotprompts.json` (absolute, or relative to `cwd`).
+   * Defaults to `cwd`. Created if missing.
+   */
+  path?: string;
 };
 
 /**
@@ -251,11 +256,29 @@ export function assertStoreWritable(resolved: ResolvedStore): void {
 }
 
 /**
- * Write `dotprompts.json` at `cwd` (and ensure `.prompts/` exists) so discovery
- * treats the tree as initialized without requiring git.
+ * Write `dotprompts.json` at a directory (and ensure `.prompts/` exists) so
+ * discovery treats the tree as initialized without requiring git.
+ *
+ * Defaults to `cwd`. Optional `path` (absolute or relative to `cwd`) targets a
+ * nested package root, e.g. `packages/api`.
  */
 export function initStore(opts: InitStoreOptions = {}): ResolvedStore {
-  const rootDir = resolve(opts.cwd ?? process.cwd());
+  const base = resolve(opts.cwd ?? process.cwd());
+  const rootDir =
+    opts.path !== undefined
+      ? isAbsolute(opts.path)
+        ? resolve(opts.path)
+        : resolve(base, opts.path)
+      : base;
+
+  if (existsSync(rootDir)) {
+    if (!statSync(rootDir).isDirectory()) {
+      throw new Error(`Cannot init dot-prompts at ${rootDir}: not a directory`);
+    }
+  } else {
+    mkdirSync(rootDir, { recursive: true });
+  }
+
   const primaryPath = join(rootDir, CONFIG_FILE_PRIMARY);
   const nestedPath = join(rootDir, PROMPTS_DIR_NAME, CONFIG_FILE_NESTED);
 

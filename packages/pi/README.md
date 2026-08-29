@@ -60,14 +60,14 @@ You do not have to call tools yourself for recording or notices. That happens on
 
 ```
 /prompts history <file>
-/prompts init
+/prompts init [path]
 ```
 
 `/prompts history` asks the agent to load provenance for that file and summarize intent for a human (why the code looks this way). The turn is explanation-only: it should not edit files, and auto-record is skipped so the summary itself does not become a new provenance entry.
 
 Example: `/prompts history src/api/fetch.ts`
 
-`/prompts init` writes `dotprompts.json` (and `.prompts/`) at the session working directory so auto-record works in trees that are not a git repository. In a git repo you usually do not need this.
+`/prompts init` writes `dotprompts.json` (and `.prompts/`) at the session working directory so auto-record works in trees that are not a git repository. Pass an optional path (relative to the session cwd or absolute) to initialize a nested package instead, e.g. `/prompts init packages/api`. In a git repo you usually do not need this.
 
 ### Skills
 

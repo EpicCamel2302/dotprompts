@@ -65,8 +65,8 @@ describe("/prompts history", () => {
     ]);
     expect(command?.getArgumentCompletions?.("in")).toEqual([
       {
-        value: "init",
-        label: "init — create store here (non-git trees)",
+        value: "init ",
+        label: "init [path] — create store here or at path",
       },
     ]);
     expect(command?.getArgumentCompletions?.("history src")).toBeNull();
@@ -97,5 +97,21 @@ describe("/prompts init", () => {
       readFileSync(join(cwd, CONFIG_FILE_PRIMARY), "utf8"),
     );
     expect(config).toEqual({ version: 1, storage: { driver: "jsonl" } });
+  });
+
+  it("accepts an optional path relative to session cwd", async () => {
+    cwd = mkdtempSync(join(tmpdir(), "dot-prompts-init-path-"));
+    const fake = createFakePi({ cwd });
+    registerPromptsCommands(fake.api);
+    const command = fake.commands.get("prompts");
+
+    await command?.handler("init packages/api", fake.commandCtx());
+
+    expect(
+      existsSync(join(cwd, "packages", "api", CONFIG_FILE_PRIMARY)),
+    ).toBe(true);
+    expect(fake.notifications[0]?.message).toContain(
+      join(cwd, "packages", "api"),
+    );
   });
 });

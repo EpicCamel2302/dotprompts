@@ -3,7 +3,7 @@ import { initStore } from "dot-prompts";
 
 export const HISTORY_COMMAND_MARKER = "[dot-prompts:history]";
 
-const USAGE = "Usage: /prompts history <file> | /prompts init";
+const USAGE = "Usage: /prompts history <file> | /prompts init [path]";
 
 export function isHistorySummarizePrompt(prompt: string | null): boolean {
   return Boolean(prompt?.includes(HISTORY_COMMAND_MARKER));
@@ -25,7 +25,7 @@ Do not edit any files. This turn is for explanation only.`;
 export function registerPromptsCommands(pi: ExtensionAPI): void {
   pi.registerCommand("prompts", {
     description:
-      "dot-prompts: /prompts history <file> | /prompts init",
+      "dot-prompts: /prompts history <file> | /prompts init [path]",
     getArgumentCompletions: (prefix) => {
       if (prefix.includes(" ")) {
         return null;
@@ -37,8 +37,8 @@ export function registerPromptsCommands(pi: ExtensionAPI): void {
           label: "history <file> — summarize provenance",
         },
         {
-          value: "init",
-          label: "init — create store here (non-git trees)",
+          value: "init ",
+          label: "init [path] — create store here or at path",
         },
       ];
       return items.filter((item) => item.value.startsWith(trimmed));
@@ -54,12 +54,15 @@ export function registerPromptsCommands(pi: ExtensionAPI): void {
       }
 
       if (subcommand === "init") {
-        if (parts.length > 1) {
-          ctx.ui.notify("Usage: /prompts init", "error");
+        if (parts.length > 2) {
+          ctx.ui.notify("Usage: /prompts init [path]", "error");
           return;
         }
         try {
-          const resolved = initStore({ cwd: ctx.cwd });
+          const resolved = initStore({
+            cwd: ctx.cwd,
+            ...(filePath ? { path: filePath } : {}),
+          });
           ctx.ui.notify(
             `Initialized dot-prompts at ${resolved.rootDir} (store: ${resolved.promptsDir})`,
             "info",

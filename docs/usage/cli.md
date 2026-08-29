@@ -37,12 +37,12 @@ Optional `storage.path` sets the store directory (relative to the config’s dir
 
 ## `init`
 
-Create `dotprompts.json` and `.prompts/` in the current working directory so non-git trees can record without `--prompts-dir`.
+Create `dotprompts.json` and `.prompts/` so non-git trees can record without `--prompts-dir`. Defaults to the current working directory; pass an optional path for a nested package root.
 
 ```bash
 dot-prompts init
+dot-prompts init packages/api
 ```
-
 ## `record`
 
 Append a provenance record from JSON on stdin.

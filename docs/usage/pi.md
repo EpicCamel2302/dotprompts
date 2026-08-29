@@ -81,7 +81,12 @@ Asks the agent to load `.prompts` for that file and summarize intent for a human
 
 ## `/prompts init`
 
-Creates `dotprompts.json` and `.prompts/` at the session working directory. Needed only when the tree is not a git repository; git projects auto-create the store on first record.
+Creates `dotprompts.json` and `.prompts/` at the session working directory (or at an optional path relative to it / absolute). Needed only when the tree is not a git repository; git projects auto-create the store on first record.
+
+```
+/prompts init
+/prompts init packages/api
+```
 
 ## Troubleshooting
 

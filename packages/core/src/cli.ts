@@ -77,21 +77,29 @@ function readStdin(): Promise<string> {
 program
   .command("init")
   .description(
-    "Create dotprompts.json (and .prompts/) in the current directory so recording works without git",
+    "Create dotprompts.json (and .prompts/) so recording works without git",
   )
-  .action((_, cmd) => {
+  .argument(
+    "[path]",
+    "Directory for the store (defaults to the current working directory)",
+  )
+  .action((pathArg: string | undefined, cmd) => {
     try {
       const explicit = cmd.optsWithGlobals().promptsDir as string | undefined;
       if (explicit !== undefined) {
         process.stderr.write(
           `${JSON.stringify({
             error: "invalid_usage",
-            message: "dot-prompts init does not take --prompts-dir; run from the project root instead",
+            message:
+              "dot-prompts init does not take --prompts-dir; pass an optional path argument instead",
           }, null, 2)}\n`,
         );
         process.exit(1);
       }
-      const resolved = initStore({ cwd: process.cwd() });
+      const resolved = initStore({
+        cwd: process.cwd(),
+        ...(pathArg !== undefined ? { path: pathArg } : {}),
+      });
       outputJson({
         rootDir: resolved.rootDir,
         promptsDir: resolved.promptsDir,
