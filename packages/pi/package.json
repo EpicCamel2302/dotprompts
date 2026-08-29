@@ -1,0 +1,51 @@
+{
+  "name": "@dot-prompts/pi",
+  "version": "0.1.0",
+  "description": "dot-prompts provenance extension for the pi coding agent",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "extensions",
+    "lib",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "pi-package",
+    "dot-prompts",
+    "provenance",
+    "llm",
+    "agents"
+  ],
+  "license": "MIT",
+  "pi": {
+    "extensions": ["./extensions/dot-prompts.ts"]
+  },
+  "dependencies": {
+    "dot-prompts": "^0.3.0"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@sinclair/typebox": "*"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "^0.84.2",
+    "@sinclair/typebox": "^0.34.30",
+    "@types/node": "^22.13.10",
+    "typescript": "^5.8.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

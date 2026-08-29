@@ -1,26 +1,28 @@
 # Pi
 
-Automatic dot-prompts integration for the [pi](https://github.com/earendil-works/pi) coding agent.
+Automatic dot-prompts integration for the [pi](https://github.com/earendil-works/pi) coding agent, published as [`@dot-prompts/pi`](https://www.npmjs.com/package/@dot-prompts/pi).
+
+## Install
 
 ```bash
-cd /path/to/dot-prompts
+pi install npm:@dot-prompts/pi
+```
+
+One-shot without installing into settings:
+
+```bash
+pi -e npm:@dot-prompts/pi
+```
+
+### From this monorepo
+
+```bash
+npm install
 npm run build
-cd extensions/pi && npm install
+pi -e ./packages/pi
 ```
 
-Per-project:
-
-```bash
-pi -e ./extensions/pi/dot-prompts.ts
-```
-
-Global pi config (absolute path):
-
-```
-/Users/you/src/dot-prompts/extensions/pi/dot-prompts.ts
-```
-
-The extension imports `dot-prompts` and `dot-prompts/pi` from the built package, so rebuild after pulling (`npm run build`).
+The package imports `dot-prompts` and its own session-trace library; rebuild after pulling (`npm run build`).
 
 ## What it does
 
@@ -45,7 +47,13 @@ Use the prompts_read tool to fetch details if relevant to your task.
 
 Lookup and `prompts_read` use the same walk-up from the file path.
 
-It also registers `prompts_read`, `prompts_chain`, and `prompts_trace`. Read and chain share parameters with the [MCP tools](mcp.md). `prompts_trace` is session-file drill-down; this extension loads pi session JSONL.
+It also registers `prompts_read`, `prompts_chain`, and `prompts_trace`. Read and chain share parameters with the [MCP tools](mcp.md). `prompts_trace` is session-file drill-down implemented in this package (`handlePromptsTrace`).
+
+## Library
+
+```ts
+import { handlePromptsTrace } from "@dot-prompts/pi";
+```
 
 ## Session metadata
 

@@ -13,7 +13,7 @@ For installing and running dot-prompts in a project.
 | [Schema](usage/schema.md) | Record format |
 | [Link types](usage/link-types.md) | Location pointers and lookup scoring |
 
-JSON Schemas: [`schemas/record.v1.json`](../schemas/record.v1.json), [`schemas/link.v1.json`](../schemas/link.v1.json).
+JSON Schemas: [`packages/core/schemas/record.v1.json`](../packages/core/schemas/record.v1.json), [`packages/core/schemas/link.v1.json`](../packages/core/schemas/link.v1.json).
 
 ## Develop
 

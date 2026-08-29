@@ -107,11 +107,11 @@ if (result.matches.length > 0) {
 
 ### Tools
 
-Use the shared handlers so MCP and in-process extensions stay aligned on `prompts_read` / `prompts_chain`. Register `prompts_trace` when the harness can load a local session file (pi is the current implementation):
+Use the shared handlers so MCP and in-process extensions stay aligned on `prompts_read` / `prompts_chain`. Register `prompts_trace` when the harness can load a local session file (pi is the current implementation in `@dot-prompts/pi`):
 
 ```typescript
 import { handlePromptsRead, handlePromptsChain, TOOL_CATALOG } from "dot-prompts";
-import { handlePromptsTrace } from "dot-prompts/pi";
+import { handlePromptsTrace } from "@dot-prompts/pi";
 
 const result = handlePromptsRead(
   { path, startLine, endLine, symbol },
@@ -126,9 +126,12 @@ const result = handlePromptsRead(
 
 `TOOL_CATALOG` is the description and params source. Map it to Zod or TypeBox at the harness edge.
 
-Alternatively, spawn the [MCP server](../usage/mcp.md) (`import { createDotPromptsMcpServer } from "dot-prompts/mcp"`) for read and chain, or call the [CLI](../usage/cli.md). Do not import `dot-prompts/pi` from an MCP adapter.
+Alternatively, spawn the [MCP server](../usage/mcp.md) (`import { createDotPromptsMcpServer } from "dot-prompts/mcp"`) for read and chain, or call the [CLI](../usage/cli.md). Do not import `@dot-prompts/pi` from MCP, Cursor, or Claude Code adapters.
 
-`prompts_trace` loads the pi session branch when `metadata.pi` (or another harness block with `sessionFile`) is present. Missing session files fall back to the stored prompt.
+`prompts_trace` loads the pi session branch when `metadata.pi` (or another harness block with `sessionFile`) is present. Missing session files fall back to the stored prompt. Other harnesses should implement their own drill-down in their package (or omit trace).
+
+Shared outcome checks (not lifecycle APIs): `@dot-prompts/conformance`.
+
 
 ## Metadata
 
@@ -151,4 +154,4 @@ Commit `.prompts/` in projects where AI provenance should travel with the repo.
 
 ## Reference
 
-The [pi extension](../../extensions/pi/dot-prompts.ts) implements record, notices, tools, and `referencedRecords` tracking. Usage: [Pi](../usage/pi.md).
+The [pi package](../../packages/pi/extensions/dot-prompts.ts) implements record, notices, tools, and `referencedRecords` tracking. Usage: [Pi](../usage/pi.md).

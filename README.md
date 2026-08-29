@@ -19,14 +19,15 @@ Commit `.prompts/` so intent travels with the code.
 ```bash
 npm install && npm run build
 
-echo '{ "model": "...", "prompt": "...", "targets": [...] }' | dot-prompts record
+echo '{ "model": "...", "prompt": "...", "targets": [...] }' | npx dot-prompts record
 
-dot-prompts lookup --path src/foo.ts --symbol myFunction
+npx dot-prompts lookup --path src/foo.ts --symbol myFunction
 
-node /path/to/dot-prompts/dist/mcp/cli.js
+npx dot-prompts-mcp
 # optional peers: npm install @modelcontextprotocol/sdk zod
 
-pi -e /path/to/dot-prompts/extensions/pi/dot-prompts.ts
+pi install npm:@dot-prompts/pi
+# or from this repo: pi -e ./packages/pi
 ```
 
 CLI, MCP client config, and pi setup: [docs/usage](docs/usage/README.md).

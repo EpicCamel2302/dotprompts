@@ -2,7 +2,7 @@
 
 Links identify **where** an edit applied within a target file. They are pointers; the code itself lives in git. The file path lives on the parent **target**, not on each link.
 
-Schema: [`schemas/link.v1.json`](../../schemas/link.v1.json)
+Schema: [`schemas/link.v1.json`](../../packages/core/schemas/link.v1.json)
 
 ## Registry
 

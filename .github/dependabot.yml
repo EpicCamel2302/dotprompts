@@ -1,26 +1,8 @@
 version: 2
 updates:
-  # Root package: group safe bumps; leave production majors as individual PRs.
+  # Workspace root lockfile covers all packages/*
   - package-ecosystem: npm
     directory: /
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
-    groups:
-      dev-minor-and-patch:
-        dependency-type: development
-        update-types:
-          - minor
-          - patch
-      production-minor-and-patch:
-        dependency-type: production
-        update-types:
-          - minor
-          - patch
-
-  # Pi extension nest: same policy.
-  - package-ecosystem: npm
-    directory: /extensions/pi
     schedule:
       interval: weekly
     open-pull-requests-limit: 5

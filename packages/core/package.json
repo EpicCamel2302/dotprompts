@@ -1,0 +1,68 @@
+{
+  "name": "dot-prompts",
+  "version": "0.3.0",
+  "description": "Provenance and observability for LLM-generated code edits",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "dot-prompts": "./dist/cli.js",
+    "dot-prompts-mcp": "./dist/mcp/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./mcp": {
+      "types": "./dist/mcp/index.d.ts",
+      "import": "./dist/mcp/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "schemas"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.ts",
+    "mcp": "node dist/mcp/cli.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "llm",
+    "provenance",
+    "ai",
+    "agents"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "commander": "^13.1.0",
+    "uuid": "^11.1.0"
+  },
+  "peerDependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.4.3"
+  },
+  "peerDependenciesMeta": {
+    "@modelcontextprotocol/sdk": {
+      "optional": true
+    },
+    "zod": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@types/node": "^22.13.10",
+    "@types/uuid": "^10.0.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "zod": "^4.4.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

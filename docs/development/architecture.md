@@ -1,25 +1,35 @@
 # Architecture
 
-One npm package, `dot-prompts`, with subpath exports. Folders match those exports.
+npm workspaces monorepo. Publishable packages:
 
-| Path | Role |
-|---|---|
-| `src/core/` | Types, storage port (JSONL), config/`findStore`, record, query, validate, hashline, `promptsDir` |
-| `src/links/` | File / region / symbol / git extraction and notice formatting |
-| `src/provenance/` | `referencedRecords` chain |
-| `src/tools/` | `TOOL_CATALOG` plus `prompts_read` / `prompts_chain` handlers |
-| `src/mcp/` | MCP adapter |
-| `src/pi/` | Pi session trace |
-| `src/cli.ts` | CLI |
-| `extensions/pi/` | Pi harness (record, notices, tools) |
+| Package | Path | Public imports |
+|---|---|---|
+| `dot-prompts` | `packages/core` | `dot-prompts`, `dot-prompts/mcp` |
+| `@dot-prompts/pi` | `packages/pi` | `@dot-prompts/pi` (session-trace + pi package) |
+| `@dot-prompts/conformance` | `packages/conformance` | `@dot-prompts/conformance` |
+
+Private stubs: `packages/cursor`, `packages/claude-code`.
 
 ```typescript
 import { record, lookup, handlePromptsRead } from "dot-prompts";
 import { createDotPromptsMcpServer } from "dot-prompts/mcp";
-import { handlePromptsTrace } from "dot-prompts/pi";
+import { handlePromptsTrace } from "@dot-prompts/pi";
 ```
 
-The default entry loads core and tools. MCP SDK and Zod load through `dot-prompts/mcp` and are optional peers. Pi session tracing loads through `dot-prompts/pi`. MCP does not import pi.
+The default `dot-prompts` entry loads core and tools. MCP SDK and Zod load through `dot-prompts/mcp` and are optional peers. Pi session tracing lives in `@dot-prompts/pi` (not a core subpath). MCP must not import the pi package.
+
+## Core layout (`packages/core/src`)
+
+| Path | Role |
+|---|---|
+| `core/` | Types, storage port (JSONL), config/`findStore`, record, query, validate, hashline, `promptsDir` |
+| `links/` | File / region / symbol / git extraction and notice formatting |
+| `provenance/` | `referencedRecords` chain |
+| `tools/` | `TOOL_CATALOG` plus `prompts_read` / `prompts_chain` handlers |
+| `mcp/` | MCP adapter |
+| `cli.ts` | CLI |
+
+Schemas ship from `packages/core/schemas/`.
 
 ## Write and read paths
 
@@ -37,7 +47,7 @@ flowchart TB
     ReadTool --> ChainTool[prompts_chain]
   end
 
-  ReadTool -.-> TraceTool["prompts_trace (pi)"]
+  ReadTool -.-> TraceTool["prompts_trace via @dot-prompts/pi"]
 ```
 
 ## Storage
@@ -48,17 +58,17 @@ Store discovery: walk up from `filePath` (else `cwd`); prefer `dotprompts.json` 
 
 ## Tools
 
-`src/tools/catalog.ts` is the description and parameter list for every tool name. Adapters choose which tools to register: MCP maps `prompts_read` and `prompts_chain` to Zod; the pi extension maps those plus `prompts_trace` to TypeBox. Shared execute logic lives in `handlePromptsRead` / `handlePromptsChain` (`src/tools/handlers.ts`). The current `prompts_trace` implementation is the pi session loader (`handlePromptsTrace` in `src/pi/handlers.ts`).
+`packages/core/src/tools/catalog.ts` is the description and parameter list for every tool name. Adapters choose which tools to register: MCP maps `prompts_read` and `prompts_chain` to Zod; the pi package maps those plus `prompts_trace` to TypeBox. Shared execute logic for read/chain lives in `handlePromptsRead` / `handlePromptsChain`. `prompts_trace` is implemented in `@dot-prompts/pi`.
 
-Records validate against JSON Schema (`schemas/`) with Ajv on write.
+Records validate against JSON Schema (`packages/core/schemas/`) with Ajv on write.
 
 ## Link types
 
 Registry and scoring: [usage/link-types](../usage/link-types.md). To add a type:
 
-1. Definition in `schemas/link.v1.json`
-2. TypeScript in `src/core/types.ts`
-3. Scoring in `src/core/query.ts`
+1. Definition in `packages/core/schemas/link.v1.json`
+2. TypeScript in `packages/core/src/core/types.ts`
+3. Scoring in `packages/core/src/core/query.ts`
 
 Experimental pointers that are not a registered link type belong in `metadata`.
 
@@ -71,12 +81,11 @@ npm run build
 
 CI (`.github/workflows/ci.yml`) runs build then test.
 
-Core tests live in `test/`. Pi extension tests live in `extensions/pi/test/` (run by the same vitest config).
-
-The pi extension is a nested package (`extensions/pi`, `dot-prompts` via `file:../..`). `npm run build:pi` builds core then installs the extension.
+Tests: `packages/core/test/`, `packages/pi/test/`, `packages/conformance/test/`.
 
 ## Conventions
 
-- One published package, with subpath exports as the public boundary.
+- Publishable core + adapter packages; session-trace is pi-local (`@dot-prompts/pi`).
 - Session pointers live at `metadata[metadata.harness]` (e.g. `metadata.pi.sessionFile`). `formatLookupForAgent` reads those generically.
-- `prompts_trace` loads the pi session branch from those pointers.
+- Adapters → core; core ↛ adapters; adapters ↛ each other.
+- Conformance asserts outcomes (records, notices, catalog), not harness lifecycle APIs.

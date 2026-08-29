@@ -7,11 +7,20 @@ const root = dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   resolve: {
     alias: {
-      "dot-prompts/pi": resolve(root, "src/pi/index.ts"),
-      "dot-prompts": resolve(root, "src/index.ts"),
+      "dot-prompts/mcp": resolve(root, "packages/core/src/mcp/index.ts"),
+      "dot-prompts": resolve(root, "packages/core/src/index.ts"),
+      "@dot-prompts/pi": resolve(root, "packages/pi/src/index.ts"),
+      "@dot-prompts/conformance": resolve(
+        root,
+        "packages/conformance/src/index.ts",
+      ),
     },
   },
   test: {
-    include: ["test/**/*.test.ts", "extensions/pi/test/**/*.test.ts"],
+    include: [
+      "packages/core/test/**/*.test.ts",
+      "packages/pi/test/**/*.test.ts",
+      "packages/conformance/test/**/*.test.ts",
+    ],
   },
 });

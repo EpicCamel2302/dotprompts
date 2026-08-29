@@ -3,16 +3,25 @@
 Version bumps and changelog entries are automated with
 [release-please](https://github.com/googleapis/release-please) after merges to `main`.
 
+This repo is an **npm workspaces** monorepo. Independent components:
+
+| Path | npm package | Release tag prefix |
+|---|---|---|
+| `packages/core` | `dot-prompts` | `dot-prompts-v*` |
+| `packages/pi` | `@dot-prompts/pi` | `dot-prompts-pi-v*` |
+| `packages/conformance` | `@dot-prompts/conformance` | `dot-prompts-conformance-v*` |
+
+Private stubs (`packages/cursor`, `packages/claude-code`) are not released.
+
 ## How it works
 
 1. Merge feature PRs into `main` as usual.
-2. On each push to `main`, the [Release Please](../../.github/workflows/release-please.yml) workflow opens or updates a **Release PR** (into `main`).
-3. That PR bumps `package.json` / `package-lock.json`, updates [CHANGELOG.md](../../CHANGELOG.md), and refreshes `.release-please-manifest.json`.
-4. Merging the Release PR creates a GitHub Release and a `vX.Y.Z` tag.
+2. On each push to `main`, the [Release Please](../../.github/workflows/release-please.yml) workflow opens or updates **Release PR(s)** (into `main`) per component that has releasable commits.
+3. Each Release PR bumps that package’s `package.json`, updates its `CHANGELOG.md`, and refreshes `.release-please-manifest.json`.
+4. Merging a Release PR creates a GitHub Release and a component tag (e.g. `dot-prompts-v0.3.1`).
+5. The [Publish](../../.github/workflows/publish.yml) workflow runs on `release: published` and `npm publish`es the matching workspace package (requires `NPM_TOKEN` and npm org access for `@dot-prompts/*`).
 
-There is no long-lived `release` branch — only the bot’s short-lived PR branch.
-
-npm publish is not wired yet; tags and GitHub Releases are enough until you add a publish job and `NPM_TOKEN`.
+There is no long-lived `release` branch — only the bot’s short-lived PR branches.
 
 ## What you write in PRs
 
@@ -20,20 +29,12 @@ Release Please reads **Conventional Commits** on `main` (commit messages and/or 
 
 | Prefix | Release bump (while on `0.x`) |
 |---|---|
-| `fix:` | patch (`0.2.0` → `0.2.1`) |
-| `feat:` | minor (`0.2.0` → `0.3.0`) |
+| `fix:` | patch |
+| `feat:` | minor |
 | `feat!:` / `fix!:` / `BREAKING CHANGE:` | minor (`bump-minor-pre-major`) until `1.0.0` |
 | `docs:`, `chore:`, `test:`, `ci:` | no version bump (unless configured otherwise) |
 
-Examples:
-
-```
-feat: walk up from file path to resolve .prompts store
-fix: silence git stderr when cwd is not a repository
-feat!: drop path from links; path lives on target only
-```
-
-Prefer squash-merging PRs with a conventional title so one clear commit lands on `main`.
+Prefer squash-merging PRs with a conventional title so one clear commit lands on `main`. Path-filtered commits still map to the packages they touch via release-please’s node-workspace plugin.
 
 ## Enforcement
 
@@ -46,36 +47,18 @@ Prefer squash-merging PRs with a conventional title so one clear commit lands on
 ### GitHub settings (one-time)
 
 1. **Settings → General → Pull Requests**
-   - Enable **Allow squash merging**; set default squash commit to **Pull request title** (or “Pull request title and description”).
-   - Disable **Allow merge commits** and **Allow rebase merging** (optional but recommended so only squash lands on `main`).
-2. **Settings → Branches → Branch protection rules** → rule for `main` (or “Rulesets” → new ruleset targeting `main`):
-   - Require a pull request before merging.
-   - Require status checks to pass; add **PR title / lint** (the job name from the PR title workflow, often `lint` under workflow `PR title`).
-   - Do not allow bypassing the check for admins if you want it strict.
-3. Open a test PR with a bad title (`Update stuff`) and confirm the check fails; rename to `ci: …` or `feat: …` and confirm it passes.
+   - Enable **Allow squash merging**; set default squash commit to **Pull request title**.
+   - Disable merge commits / rebase if you want only squash on `main`.
+2. **Settings → Branches** — require PR + **PR title / lint** check on `main`.
+3. **Settings → Secrets** — add `NPM_TOKEN` with publish rights for `dot-prompts` and `@dot-prompts/*`.
+4. **Settings → Actions → General → Workflow permissions**
+   - Allow GitHub Actions to create and approve pull requests
+   - Read and write permissions (needed for tags/releases)
 
-## Bootstrapping
+## Bootstrapping notes
 
-The manifest is seeded at **0.2.0** (current `package.json`). After this lands on `main`, create a matching tag once so history is clear:
-
-```bash
-git tag v0.2.0
-git push origin v0.2.0
-```
-
-Only commits **after** that baseline (with conventional prefixes) feed the next Release PR.
-
-### Allow Actions to open Release PRs
-
-If the workflow fails with *GitHub Actions is not permitted to create or approve pull requests*, enable it in the repo:
-
-**Settings → Actions → General → Workflow permissions**
-
-- Check **Allow GitHub Actions to create and approve pull requests**
-- Keep **Read and write permissions** (needed for tags/releases)
-
-Then re-run the failed Release Please workflow from the Actions tab.
+Manifest versions are seeded in `.release-please-manifest.json`. Tags use `include-component-in-tag` (not a single repo-wide `vX.Y.Z` for every package).
 
 ## Manual changelog notes
 
-You can still edit the Release PR’s changelog section before merging if a commit message is too terse. Day-to-day “Unreleased” bullets are optional once Conventional Commits are the source of truth; release-please owns the versioned sections of `CHANGELOG.md`.
+You can still edit a Release PR’s changelog section before merging if a commit message is too terse. release-please owns the versioned sections of each package `CHANGELOG.md`.
