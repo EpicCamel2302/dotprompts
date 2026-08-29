@@ -1,0 +1,42 @@
+name: Publish
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm run build
+      - name: Publish package for release tag
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          case "$tag" in
+            dot-prompts-v*)
+              npm publish -w dot-prompts --access public --provenance
+              ;;
+            dot-prompts-pi-v*)
+              npm publish -w @dot-prompts/pi --access public --provenance
+              ;;
+            dot-prompts-conformance-v*)
+              npm publish -w @dot-prompts/conformance --access public --provenance
+              ;;
+            *)
+              echo "Unrecognized release tag: $tag (expected dot-prompts-v*, dot-prompts-pi-v*, or dot-prompts-conformance-v*)"
+              exit 1
+              ;;
+          esac

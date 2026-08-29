@@ -8,7 +8,7 @@ import {
   loadPiSessionEntries,
   parsePiSessionFile,
   tracePiSession,
-} from "../src/pi/trace.js";
+} from "../src/trace.js";
 
 const sampleSession = [
   '{"type":"session","id":"sess1","timestamp":"2026-08-20T10:00:00.000Z","cwd":"/proj"}',

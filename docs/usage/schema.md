@@ -1,6 +1,6 @@
 # Schema (v1)
 
-Files: [`schemas/record.v1.json`](../../schemas/record.v1.json), [`schemas/link.v1.json`](../../schemas/link.v1.json)
+Files: [`schemas/record.v1.json`](../../packages/core/schemas/record.v1.json), [`schemas/link.v1.json`](../../packages/core/schemas/link.v1.json)
 
 A **record** is one provenance event: a user prompt that caused one or more file edits.
 

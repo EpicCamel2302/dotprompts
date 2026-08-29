@@ -3,7 +3,7 @@ import {
   HISTORY_COMMAND_MARKER,
   isHistorySummarizePrompt,
   registerPromptsCommands,
-} from "../commands.js";
+} from "../lib/commands.js";
 import { createFakePi } from "./fake-pi.js";
 
 describe("isHistorySummarizePrompt", () => {

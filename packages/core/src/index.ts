@@ -87,6 +87,7 @@ export type {
   ToolHandlerOptions,
   ToolHandlerResult,
 } from "./tools/handlers.js";
+export { formatRecordFallback, toolErrorText } from "./tools/format.js";
 export { ValidationError } from "./core/validate.js";
 export type {
   ContextOptions,

@@ -1,5 +1,5 @@
 import type { ReadonlySessionManager } from "@earendil-works/pi-coding-agent";
-import type { PiSessionMetadata } from "dot-prompts/pi";
+import type { PiSessionMetadata } from "../dist/index.js";
 
 type SessionEntry = {
   type: string;

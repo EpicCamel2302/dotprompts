@@ -1,5 +1,11 @@
 # Changelog
 
+Pre-monorepo history for the single `dot-prompts` package. After the workspaces split, see:
+
+- [packages/core/CHANGELOG.md](packages/core/CHANGELOG.md)
+- [packages/pi/CHANGELOG.md](packages/pi/CHANGELOG.md)
+- [packages/conformance/CHANGELOG.md](packages/conformance/CHANGELOG.md)
+
 ## [0.3.0](https://github.com/EpicCamel2302/dotprompts/compare/v0.2.0...v0.3.0) (2026-08-20)
 
 

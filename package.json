@@ -1,76 +1,22 @@
 {
-  "name": "dot-prompts",
-  "version": "0.3.0",
-  "description": "Provenance and observability for LLM-generated code edits",
+  "name": "dot-prompts-monorepo",
+  "private": true,
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "bin": {
-    "dot-prompts": "./dist/cli.js",
-    "dot-prompts-mcp": "./dist/mcp/cli.js"
-  },
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./mcp": {
-      "types": "./dist/mcp/index.d.ts",
-      "import": "./dist/mcp/index.js"
-    },
-    "./pi": {
-      "types": "./dist/pi/index.d.ts",
-      "import": "./dist/pi/index.js"
-    }
-  },
-  "files": [
-    "dist",
-    "schemas"
+  "workspaces": [
+    "packages/*"
   ],
   "scripts": {
-    "build": "tsc",
-    "dev": "tsx src/cli.ts",
-    "mcp": "node dist/mcp/cli.js",
+    "build": "npm run build -w dot-prompts && npm run build -w @dot-prompts/pi && npm run build -w @dot-prompts/conformance",
+    "build:core": "npm run build -w dot-prompts",
+    "build:pi": "npm run build -w dot-prompts && npm run build -w @dot-prompts/pi",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepublishOnly": "npm run build",
-    "build:pi": "npm run build && cd extensions/pi && npm install"
-  },
-  "keywords": [
-    "llm",
-    "provenance",
-    "ai",
-    "agents"
-  ],
-  "license": "MIT",
-  "dependencies": {
-    "ajv": "^8.17.1",
-    "ajv-formats": "^3.0.1",
-    "commander": "^13.1.0",
-    "uuid": "^11.1.0"
-  },
-  "peerDependencies": {
-    "@modelcontextprotocol/sdk": "^1.30.0",
-    "zod": "^4.4.3"
-  },
-  "peerDependenciesMeta": {
-    "@modelcontextprotocol/sdk": {
-      "optional": true
-    },
-    "zod": {
-      "optional": true
-    }
+    "dev": "npm run dev -w dot-prompts"
   },
   "devDependencies": {
-    "@earendil-works/pi-coding-agent": "^0.84.2",
-    "@modelcontextprotocol/sdk": "^1.30.0",
-    "@sinclair/typebox": "^0.34.30",
     "@types/node": "^22.13.10",
-    "@types/uuid": "^10.0.0",
-    "tsx": "^4.19.3",
     "typescript": "^5.8.2",
-    "vitest": "^4.1.10",
-    "zod": "^4.4.3"
+    "vitest": "^4.1.10"
   },
   "engines": {
     "node": ">=18"

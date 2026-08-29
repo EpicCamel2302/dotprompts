@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   capturePiMetadata,
   findLatestUserMessageId,
-} from "../session-capture.js";
+} from "../lib/session-capture.js";
 import { createFakePi } from "./fake-pi.js";
 
 describe("findLatestUserMessageId", () => {

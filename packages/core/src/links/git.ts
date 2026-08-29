@@ -16,25 +16,29 @@ export function getGitHead(cwd: string): string | null {
 }
 
 export function toRepoRelativePath(cwd: string, absoluteOrRelative: string): string {
+  const normalized = absoluteOrRelative.replace(/\\/g, "/");
   try {
-    const relative = execFileSync(
-      "git",
-      ["rev-parse", "--show-prefix"],
-      { cwd, encoding: "utf8", stdio: [...GIT_STDIO] },
-    ).trim();
-    const normalized = absoluteOrRelative.replace(/\\/g, "/");
     if (normalized.startsWith("/")) {
       const root = execFileSync("git", ["rev-parse", "--show-toplevel"], {
         cwd,
         encoding: "utf8",
         stdio: [...GIT_STDIO],
-      }).trim();
-      const rel = normalized.slice(root.length).replace(/^\//, "");
-      return rel;
+      })
+        .trim()
+        .replace(/\\/g, "/");
+      if (normalized === root || normalized.startsWith(`${root}/`)) {
+        return normalized.slice(root.length).replace(/^\//, "");
+      }
     }
     return normalized.replace(/^\.\//, "");
   } catch {
-    return absoluteOrRelative.replace(/\\/g, "/").replace(/^\.\//, "");
+    if (normalized.startsWith("/")) {
+      const cwdNorm = cwd.replace(/\\/g, "/").replace(/\/$/, "");
+      if (normalized === cwdNorm || normalized.startsWith(`${cwdNorm}/`)) {
+        return normalized.slice(cwdNorm.length).replace(/^\//, "");
+      }
+    }
+    return normalized.replace(/^\.\//, "");
   }
 }
 

@@ -1,43 +1,41 @@
 # AGENTS.md — developing dot-prompts
 
-Instructions for coding agents working **in this repository** (the library, CLI, MCP server, and pi extension).
+Instructions for coding agents working **in this repository** (npm workspaces: core library, MCP, pi package, conformance, harness stubs).
 
-Humans: [docs/usage](docs/usage/README.md) to install and run; [docs/development](docs/development/README.md) to extend the code. History: [CHANGELOG.md](CHANGELOG.md).
+Humans: [docs/usage](docs/usage/README.md) to install and run; [docs/development](docs/development/README.md) to extend the code. History: package changelogs under `packages/*/CHANGELOG.md` (root [CHANGELOG.md](CHANGELOG.md) holds pre-monorepo history).
 
 Agents in consuming projects get provenance through MCP or the pi tools. Do not add consumer-agent workflow docs to this tree.
 
 ## What this repo is
 
-`.prompts/` is a provenance log: **why** prior AI edits were made (user prompt, model, location). Git stores the code. This package writes, indexes, and serves those records.
+`.prompts/` is a provenance log: **why** prior AI edits were made (user prompt, model, location). Git stores the code. This monorepo writes, indexes, and serves those records, plus harness adapters.
 
 ## Layout
 
 | Path | Role |
 |---|---|
-| `src/core/` | Types, `Storage` port + JSONL, config/`findStore`, record, query, validate, `promptsDir` |
-| `src/links/` | Extraction and notice formatting |
-| `src/provenance/` | `referencedRecords` chain |
-| `src/tools/` | `TOOL_CATALOG`, `handlePromptsRead`, `handlePromptsChain` |
-| `src/mcp/` | MCP adapter (`dot-prompts/mcp`) |
-| `src/pi/` | Pi trace (`dot-prompts/pi`) |
-| `src/cli.ts` | CLI |
-| `extensions/pi/` | Pi harness |
-| `schemas/` | JSON Schema for records, links, and config |
+| `packages/core/` | Publishable `dot-prompts` — types, storage, record/query, links, tools, MCP (`dot-prompts/mcp`), CLI, schemas |
+| `packages/pi/` | Publishable `@dot-prompts/pi` — pi harness (`extensions/dot-prompts.ts` + `lib/` helpers) + session-trace library |
+| `packages/conformance/` | Publishable `@dot-prompts/conformance` — harness-agnostic assert helpers |
+| `packages/cursor/` | Private stub for Cursor adapter |
+| `packages/claude-code/` | Private stub for Claude Code adapter |
 
 Details: [docs/development/architecture.md](docs/development/architecture.md). Harness contract: [docs/development/harness.md](docs/development/harness.md).
 
 ## Conventions
 
-- **Tool params and copy** live in `src/tools/catalog.ts`. Adapters choose which names to register. MCP adapts `prompts_read` / `prompts_chain` to Zod; pi adapts those plus `prompts_trace` to TypeBox. Do not duplicate descriptions in adapters.
-- **MCP** must not import `src/pi`. `@modelcontextprotocol/sdk` and `zod` are optional peers; they belong in `devDependencies` here so this repo can still build and test the adapter.
-- **Records** validate with Ajv against `schemas/`. That is the on-disk contract. **Project config** validates against `schemas/config.v1.json`.
+- **Tool params and copy** live in `packages/core/src/tools/catalog.ts`. Adapters choose which names to register. MCP adapts `prompts_read` / `prompts_chain` to Zod; pi adapts those plus `prompts_trace` to TypeBox. Do not duplicate descriptions in adapters.
+- **MCP** (`packages/core/src/mcp`) must not import `@dot-prompts/pi`. `@modelcontextprotocol/sdk` and `zod` are optional peers of `dot-prompts`.
+- **Session-trace** lives only in `@dot-prompts/pi`. Cursor / Claude / MCP must not depend on that package. Future harness drill-down belongs in that harness’s package.
+- **Records** validate with Ajv against `packages/core/schemas/`. **Project config** validates against `config.v1.json` there.
 - **Storage** goes through `Storage` (`append` / `list` / `getById`). JSONL is the implementation.
 - **Store path** goes through `findStore` (walk-up from `filePath` / cwd to `dotprompts.json` or `.prompts/config.json`). Overrides: `--prompts-dir` or `{ promptsDir }` / `{ storage }`.
-- **Session pointers** sit at `metadata[metadata.harness]`. Portable formatting must not import `src/pi`.
-- **One npm package.** Subpath exports (`dot-prompts`, `dot-prompts/mcp`, `dot-prompts/pi`) are the boundary. Do not add workspaces, a harness plugin registry, or a second storage backend unless the user asks.
-- **Tests:** core in `test/`; pi extension in `extensions/pi/test/`.
+- **Session pointers** sit at `metadata[metadata.harness]`. Portable formatting must not import harness packages.
+- **Workspaces:** publishable packages are `dot-prompts`, `@dot-prompts/pi`, `@dot-prompts/conformance`. Do not add a harness plugin registry or a second storage backend unless the user asks.
+- **Dependency direction:** adapters → core (and conformance for tests); core ↛ adapters; adapters ↛ each other.
+- **Tests:** `packages/core/test/`, `packages/pi/test/`, `packages/conformance/test/` (root vitest).
 
-When user-facing behavior changes, update [docs/usage](docs/usage/README.md). When internals or the library API change, update [docs/development](docs/development/README.md). Versioned changelog sections are owned by release-please; see [CHANGELOG.md](CHANGELOG.md) and [releasing](docs/development/releasing.md).
+When user-facing behavior changes, update [docs/usage](docs/usage/README.md). When internals or the library API change, update [docs/development](docs/development/README.md). Versioned changelog sections are owned by release-please per package; see [releasing](docs/development/releasing.md).
 
 ## Pull requests and commits
 
@@ -57,5 +55,3 @@ Examples: `feat: walk up from file path to resolve .prompts store`, `fix: silenc
 npm test
 npm run build
 ```
-
-Pi extension: `npm run build:pi` (needs a successful core build).

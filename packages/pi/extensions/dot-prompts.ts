@@ -6,7 +6,7 @@
  * - Registers prompts_read, prompts_chain, and prompts_trace for opt-in context fetch
  * - Slash commands: /prompts history <file>
  *
- * Usage: pi -e ./extensions/pi/dot-prompts.ts
+ * Usage: pi install npm:@dot-prompts/pi  (or pi -e ./packages/pi)
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
@@ -26,15 +26,15 @@ import {
   record,
   type ToolParam,
 } from "dot-prompts";
-import { handlePromptsTrace } from "dot-prompts/pi";
+import { handlePromptsTrace } from "../dist/index.js";
 import {
   capturePiMetadata,
   findLatestUserMessageId,
-} from "./session-capture.js";
+} from "../lib/session-capture.js";
 import {
   isHistorySummarizePrompt,
   registerPromptsCommands,
-} from "./commands.js";
+} from "../lib/commands.js";
 
 let currentPrompt: string | null = null;
 let currentUserMessageId: string | undefined;

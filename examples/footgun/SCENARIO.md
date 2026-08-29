@@ -16,7 +16,7 @@ Run pi with the extension from repo root:
 
 ```bash
 npm run build
-pi -e ./extensions/pi/dot-prompts.ts
+pi -e ./packages/pi
 ```
 
 Execute these prompts in order (each should trigger an edit + auto-record):
@@ -41,7 +41,7 @@ Optionally commit `.prompts/` so session 2 reads real history.
 Start a **new pi session** (no conversation context):
 
 ```bash
-pi -e ./extensions/pi/dot-prompts.ts
+pi -e ./packages/pi
 ```
 
 Prompt:

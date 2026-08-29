@@ -203,6 +203,26 @@ describe("storage and ranked lookup", () => {
     expect(openEnded.matches.length).toBeGreaterThan(0);
   });
 
+  it("matches absolute query paths to repo-relative record targets", () => {
+    record(sampleInput, { promptsDir });
+    const absolute = join(process.cwd(), "src/api/fetch.ts");
+    const result = lookup(
+      { path: absolute },
+      { promptsDir, cwd: process.cwd() },
+    );
+    expect(result.matches.length).toBeGreaterThan(0);
+
+    const listed = list({ promptsDir, path: absolute, cwd: process.cwd() });
+    expect(listed).toHaveLength(1);
+
+    const ranged = lookupForReadRange(absolute, 1, 50, {
+      promptsDir,
+      cwd: process.cwd(),
+      filePath: absolute,
+    });
+    expect(ranged.matches.length).toBeGreaterThan(0);
+  });
+
   it("returns empty list for missing history and writes mirrors", () => {
     const storage = createJsonlStorage(promptsDir);
     expect(storage.list()).toEqual([]);

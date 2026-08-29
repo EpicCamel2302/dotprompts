@@ -3,14 +3,18 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { list } from "dot-prompts";
-import { HISTORY_COMMAND_MARKER } from "../commands.js";
+import {
+  assertHarnessRecord,
+  assertRegisteredTools,
+} from "@dot-prompts/conformance";
+import { HISTORY_COMMAND_MARKER } from "../lib/commands.js";
 import { createFakePi } from "./fake-pi.js";
 
 const originalCwd = process.cwd();
 
 async function loadExtension() {
   vi.resetModules();
-  const mod = await import("../dot-prompts.ts");
+  const mod = await import("../extensions/dot-prompts.ts");
   return mod.registerDotPromptsExtension;
 }
 
@@ -70,6 +74,9 @@ describe("pi extension", () => {
 
     const records = list();
     expect(records).toHaveLength(1);
+    expect(
+      assertHarnessRecord(records[0], { harness: "pi" }).ok,
+    ).toBe(true);
     expect(records[0]?.prompt).toBe("keep retries at 3");
     expect(records[0]?.model).toBe("test/model");
     expect(records[0]?.metadata).toMatchObject({
@@ -84,6 +91,13 @@ describe("pi extension", () => {
       },
     });
     expect(records[0]?.targets[0]?.path).toBe("src/retry.ts");
+  });
+
+  it("registers required catalog tools including prompts_trace", async () => {
+    const fake = await startExtension();
+    expect(
+      assertRegisteredTools(fake.tools.keys(), { requireTrace: true }).ok,
+    ).toBe(true);
   });
 
   it("records a successful write", async () => {

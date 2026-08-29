@@ -1,4 +1,4 @@
-import { formatRecordFallback } from "../tools/format.js";
+import { formatRecordFallback } from "dot-prompts";
 import { existsSync, readFileSync } from "node:fs";
 import type { PiSessionEntry, PiTraceResult } from "./types.js";
 

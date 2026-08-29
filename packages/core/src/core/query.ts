@@ -1,8 +1,10 @@
+import { dirname } from "node:path";
 import { resolveStorage, type StoreOptions } from "./storage.js";
 import {
   collectProvenanceChain,
   type ProvenanceChainResult,
 } from "../provenance/chain.js";
+import { toRepoRelativePath } from "../links/git.js";
 import type {
   ContextOptions,
   ContextSummary,
@@ -22,9 +24,37 @@ function normalizePath(path: string): string {
   return path.replace(/\\/g, "/");
 }
 
+/** cwd used to turn absolute tool paths into repo-relative record paths. */
+function matchCwd(opts: StoreOptions): string {
+  if (opts.cwd) {
+    return opts.cwd;
+  }
+  if (opts.filePath) {
+    return dirname(opts.filePath);
+  }
+  return process.cwd();
+}
+
+/**
+ * Compare query/target paths. Pi and other harnesses often pass absolute paths;
+ * records store repo-relative paths from extractLinks*.
+ */
+function pathsMatch(a: string, b: string, cwd: string): boolean {
+  const left = normalizePath(a);
+  const right = normalizePath(b);
+  if (left === right) {
+    return true;
+  }
+  return (
+    normalizePath(toRepoRelativePath(cwd, a)) ===
+    normalizePath(toRepoRelativePath(cwd, b))
+  );
+}
+
 function recordMatchesFilters(
   record: PromptRecord,
   opts: ListOptions,
+  cwd: string,
 ): boolean {
   if (opts.since && record.timestamp < opts.since) {
     return false;
@@ -35,9 +65,8 @@ function recordMatchesFilters(
   }
 
   if (opts.path) {
-    const target = normalizePath(opts.path);
-    const hasPath = record.targets.some(
-      (entry) => normalizePath(entry.path) === target,
+    const hasPath = record.targets.some((entry) =>
+      pathsMatch(entry.path, opts.path!, cwd),
     );
     if (!hasPath) {
       return false;
@@ -53,8 +82,9 @@ function sortByTimestampDesc(records: PromptRecord[]): PromptRecord[] {
 
 export function list(opts: QueryOptions = {}): PromptRecord[] {
   const storage = resolveStorage(opts);
+  const cwd = matchCwd(opts);
   const filtered = storage.list().filter((record) =>
-    recordMatchesFilters(record, opts),
+    recordMatchesFilters(record, opts, cwd),
   );
   const sorted = sortByTimestampDesc(filtered);
   if (opts.limit !== undefined) {
@@ -130,6 +160,7 @@ export function lookup(
 ): LookupResult {
   const minConfidence = opts.minConfidence ?? 0.4;
   const limit = opts.limit ?? 5;
+  const cwd = matchCwd(opts);
   const records = sortByTimestampDesc(resolveStorage(opts).list());
   const matches: LookupMatch[] = [];
 
@@ -139,7 +170,7 @@ export function lookup(
     const matchedLinks: Link[] = [];
 
     for (const target of record.targets) {
-      if (normalizePath(target.path) !== normalizePath(query.path)) {
+      if (!pathsMatch(target.path, query.path, cwd)) {
         continue;
       }
 

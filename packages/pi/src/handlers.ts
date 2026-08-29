@@ -1,5 +1,8 @@
-import { get } from "../core/query.js";
-import type { ToolHandlerOptions, ToolHandlerResult } from "../tools/handlers.js";
+import {
+  get,
+  type ToolHandlerOptions,
+  type ToolHandlerResult,
+} from "dot-prompts";
 import { formatRecordOnlyFallback, getPiMetadata, tracePiSession } from "./trace.js";
 
 export type PromptsTraceParams = {

@@ -2,7 +2,7 @@
 
 Opt-in provenance tools for MCP clients (Cursor, Claude Code, and others). Recording after edits and `[dot-prompts]` notices on read come from the harness. MCP serves the portable tools: `prompts_read` and `prompts_chain`.
 
-`prompts_trace` is session drill-down. MCP does not register it; the current loader is `dot-prompts/pi` and the [pi extension](pi.md).
+`prompts_trace` is session drill-down. MCP does not register it; the current loader is `@dot-prompts/pi` and the [pi package](pi.md).
 
 The MCP SDK and Zod are optional peers. Install them when you want the server:
 
@@ -10,15 +10,15 @@ The MCP SDK and Zod are optional peers. Install them when you want the server:
 npm install @modelcontextprotocol/sdk zod
 ```
 
-In this repository they are already in `devDependencies`, so `npm install && npm run build` is enough to run the server locally.
+In this repository they are already in `packages/core` `devDependencies`, so `npm install && npm run build` is enough to run the server locally.
 
 ```bash
 cd /path/to/dot-prompts
 npm install && npm run build
 ```
 
-- `dot-prompts-mcp` → `dist/mcp/cli.js`
-- `npm run mcp` → same entrypoint
+- `dot-prompts-mcp` → `packages/core/dist/mcp/cli.js` (via workspace bin)
+- `npm run mcp -w dot-prompts` → same entrypoint
 
 Missing peers fail the CLI with an install hint instead of a raw module-not-found stack.
 
@@ -31,7 +31,7 @@ Point the client at the built CLI and set `cwd` to the project (or monorepo pack
   "mcpServers": {
     "dot-prompts": {
       "command": "node",
-      "args": ["/absolute/path/to/dot-prompts/dist/mcp/cli.js"],
+      "args": ["/absolute/path/to/dot-prompts/packages/core/dist/mcp/cli.js"],
       "cwd": "/absolute/path/to/your-project"
     }
   }
@@ -74,7 +74,7 @@ Session-file drill-down (`prompts_trace`) is not an MCP tool today; see [Pi](pi.
 Override discovery:
 
 ```bash
-node dist/mcp/cli.js --prompts-dir /tmp/proj/.prompts
+node packages/core/dist/mcp/cli.js --prompts-dir /tmp/proj/.prompts
 ```
 
 ## CLI
