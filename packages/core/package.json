@@ -21,7 +21,8 @@
   },
   "files": [
     "dist",
-    "schemas"
+    "schemas",
+    "README.md"
   ],
   "scripts": {
     "build": "tsc",
@@ -36,6 +37,15 @@
     "agents"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EpicCamel2302/dotprompts.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/EpicCamel2302/dotprompts/tree/main/packages/core#readme",
+  "bugs": {
+    "url": "https://github.com/EpicCamel2302/dotprompts/issues"
+  },
   "dependencies": {
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",

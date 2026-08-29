@@ -29,6 +29,15 @@
     "agents"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EpicCamel2302/dotprompts.git",
+    "directory": "packages/pi"
+  },
+  "homepage": "https://github.com/EpicCamel2302/dotprompts/tree/main/packages/pi#readme",
+  "bugs": {
+    "url": "https://github.com/EpicCamel2302/dotprompts/issues"
+  },
   "pi": {
     "extensions": ["./extensions/dot-prompts.ts"]
   },
