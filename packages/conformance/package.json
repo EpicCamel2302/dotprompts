@@ -1,6 +1,6 @@
 {
   "name": "@dot-prompts/conformance",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Harness-agnostic conformance helpers for dot-prompts adapters",
   "type": "module",
   "main": "./dist/index.js",
@@ -26,17 +26,8 @@
     "harness"
   ],
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/EpicCamel2302/dotprompts.git",
-    "directory": "packages/conformance"
-  },
-  "homepage": "https://github.com/EpicCamel2302/dotprompts/tree/main/packages/conformance#readme",
-  "bugs": {
-    "url": "https://github.com/EpicCamel2302/dotprompts/issues"
-  },
   "dependencies": {
-    "dot-prompts": "*"
+    "dot-prompts": "0.4.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",

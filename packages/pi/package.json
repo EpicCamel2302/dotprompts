@@ -1,6 +1,6 @@
 {
   "name": "@dot-prompts/pi",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "dot-prompts provenance extension for the pi coding agent",
   "type": "module",
   "main": "./dist/index.js",
@@ -29,20 +29,13 @@
     "agents"
   ],
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/EpicCamel2302/dotprompts.git",
-    "directory": "packages/pi"
-  },
-  "homepage": "https://github.com/EpicCamel2302/dotprompts/tree/main/packages/pi#readme",
-  "bugs": {
-    "url": "https://github.com/EpicCamel2302/dotprompts/issues"
-  },
   "pi": {
-    "extensions": ["./extensions/dot-prompts.ts"]
+    "extensions": [
+      "./extensions/dot-prompts.ts"
+    ]
   },
   "dependencies": {
-    "dot-prompts": "^0.3.0"
+    "dot-prompts": "^0.4.0"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*",
