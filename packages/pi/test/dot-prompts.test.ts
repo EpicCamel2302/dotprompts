@@ -23,6 +23,7 @@ describe("pi extension", () => {
 
   beforeEach(() => {
     cwd = mkdtempSync(join(tmpdir(), "dot-prompts-pi-ext-"));
+    mkdirSync(join(cwd, ".git"));
     process.chdir(cwd);
   });
 
@@ -410,5 +411,79 @@ describe("pi extension", () => {
       content: [{ type: "text", text: "export {};" }],
     });
     expect(result).toBeUndefined();
+  });
+});
+
+describe("pi extension without git", () => {
+  let cwd: string;
+
+  beforeEach(() => {
+    cwd = mkdtempSync(join(tmpdir(), "dot-prompts-pi-nongit-"));
+    process.chdir(cwd);
+  });
+
+  afterEach(() => {
+    process.chdir(originalCwd);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it("skips auto-record and warns once until /prompts init", async () => {
+    const register = await loadExtension();
+    const fake = createFakePi({ cwd, prompt: "edit without store" });
+    register(fake.api);
+
+    writeFileSync(join(cwd, "a.ts"), "export const a = 1;\n", "utf8");
+    await fake.emit("before_agent_start", { prompt: "edit without store" });
+    await fake.emit("agent_start");
+    await fake.emit("tool_call", {
+      toolCallId: "e1",
+      toolName: "edit",
+      input: { path: "a.ts" },
+    });
+    writeFileSync(join(cwd, "a.ts"), "export const a = 2;\n", "utf8");
+    await fake.emit("tool_result", {
+      toolCallId: "e1",
+      toolName: "edit",
+      isError: false,
+      input: { path: "a.ts" },
+      details: {
+        patch: "@@ -1,1 +1,1 @@\n-export const a = 1;\n+export const a = 2;",
+        firstChangedLine: 1,
+      },
+    });
+    await fake.emit("agent_end");
+
+    expect(list({ cwd })).toHaveLength(0);
+    expect(fake.notifications.some((n) => n.message.includes("/prompts init"))).toBe(
+      true,
+    );
+
+    const command = fake.commands.get("prompts");
+    await command?.handler("init", fake.commandCtx());
+    expect(list({ cwd })).toHaveLength(0);
+
+    await fake.emit("before_agent_start", { prompt: "after init" });
+    await fake.emit("agent_start");
+    await fake.emit("tool_call", {
+      toolCallId: "e2",
+      toolName: "edit",
+      input: { path: "a.ts" },
+    });
+    writeFileSync(join(cwd, "a.ts"), "export const a = 3;\n", "utf8");
+    await fake.emit("tool_result", {
+      toolCallId: "e2",
+      toolName: "edit",
+      isError: false,
+      input: { path: "a.ts" },
+      details: {
+        patch: "@@ -1,1 +1,1 @@\n-export const a = 2;\n+export const a = 3;",
+        firstChangedLine: 1,
+      },
+    });
+    await fake.emit("agent_end");
+
+    const records = list({ cwd });
+    expect(records).toHaveLength(1);
+    expect(records[0]?.prompt).toBe("after init");
   });
 });

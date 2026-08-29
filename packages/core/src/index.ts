@@ -42,15 +42,21 @@ export {
 export {
   CONFIG_FILE_NESTED,
   CONFIG_FILE_PRIMARY,
+  assertStoreWritable,
   findStore,
+  initStore,
+  isStoreWritable,
   loadConfigFile,
   resolvePromptsDirFromCli,
+  StoreNotInitializedError,
   validateConfig,
 } from "./core/config.js";
 export type {
   DotPromptsConfig,
   FindStoreOptions,
+  InitStoreOptions,
   ResolvedStore,
+  StoreSource,
 } from "./core/config.js";
 export { getHarnessSessionPointers } from "./core/metadata.js";
 export type { HarnessSessionPointers } from "./core/metadata.js";

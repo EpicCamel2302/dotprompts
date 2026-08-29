@@ -3,6 +3,7 @@
 import { Command } from "commander";
 import { readFileSync } from "node:fs";
 import { annotateFile } from "./core/hashline.js";
+import { initStore, StoreNotInitializedError } from "./core/config.js";
 import { record } from "./core/record.js";
 import { context, get, list, lookup, chain } from "./core/query.js";
 import { resolvePromptsDir } from "./core/prompts-dir.js";
@@ -45,6 +46,18 @@ function outputError(error: unknown): never {
     process.exit(1);
   }
 
+  if (error instanceof StoreNotInitializedError) {
+    process.stderr.write(
+      `${JSON.stringify({
+        error: "store_not_initialized",
+        message: error.message,
+        rootDir: error.rootDir,
+        promptsDir: error.promptsDir,
+      }, null, 2)}\n`,
+    );
+    process.exit(1);
+  }
+
   const message = error instanceof Error ? error.message : String(error);
   process.stderr.write(
     `${JSON.stringify({ error: "failure", message }, null, 2)}\n`,
@@ -60,6 +73,42 @@ function readStdin(): Promise<string> {
     process.stdin.on("error", reject);
   });
 }
+
+program
+  .command("init")
+  .description(
+    "Create dotprompts.json (and .prompts/) so recording works without git",
+  )
+  .argument(
+    "[path]",
+    "Directory for the store (defaults to the current working directory)",
+  )
+  .action((pathArg: string | undefined, cmd) => {
+    try {
+      const explicit = cmd.optsWithGlobals().promptsDir as string | undefined;
+      if (explicit !== undefined) {
+        process.stderr.write(
+          `${JSON.stringify({
+            error: "invalid_usage",
+            message:
+              "dot-prompts init does not take --prompts-dir; pass an optional path argument instead",
+          }, null, 2)}\n`,
+        );
+        process.exit(1);
+      }
+      const resolved = initStore({
+        cwd: process.cwd(),
+        ...(pathArg !== undefined ? { path: pathArg } : {}),
+      });
+      outputJson({
+        rootDir: resolved.rootDir,
+        promptsDir: resolved.promptsDir,
+        configPath: resolved.configPath,
+      });
+    } catch (error) {
+      outputError(error);
+    }
+  });
 
 program
   .command("record")

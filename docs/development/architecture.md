@@ -54,7 +54,7 @@ flowchart TB
 
 Callers talk to a `Storage` port (`append`, `list`, `getById`). `JsonlStorage` is the implementation. Pass `{ promptsDir }`, `{ storage }`, or `{ filePath }` / `{ cwd }` so `findStore` can walk up to `dotprompts.json` or `.prompts/config.json`.
 
-Store discovery: walk up from `filePath` (else `cwd`); prefer `dotprompts.json` then `.prompts/config.json`; stop at `.git` (use `<gitRoot>/.prompts`) or, with no git/config, `<cwd>/.prompts`. CLI `--prompts-dir` and API `{ promptsDir }` skip discovery. Config validates against `schemas/config.v1.json`.
+Store discovery: walk up from `filePath` (else `cwd`); prefer `dotprompts.json` then `.prompts/config.json`; stop at `.git` (use `<gitRoot>/.prompts`) or, with no git/config, `<cwd>/.prompts`. Recording **auto-creates** the store for git and config-backed roots; a bare cwd fallback refuses until `initStore` / `dot-prompts init` / `/prompts init`. CLI `--prompts-dir` and API `{ promptsDir }` skip discovery. Config validates against `schemas/config.v1.json`.
 
 ## Tools
 
