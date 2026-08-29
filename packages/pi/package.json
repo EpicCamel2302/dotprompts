@@ -33,7 +33,7 @@
     "extensions": ["./extensions/dot-prompts.ts"]
   },
   "dependencies": {
-    "dot-prompts": "*"
+    "dot-prompts": "^0.3.0"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*",
