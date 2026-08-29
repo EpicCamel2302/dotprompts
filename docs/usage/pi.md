@@ -32,7 +32,7 @@ On each successful `edit` or `write` during a generation, buffers a target (link
 2. Derives `file`, `region`, `git`, and `symbol` links from each patch (merged when a file is edited more than once; nested regions collapse)
 3. Stores pi session pointers in `metadata.pi` (including `toolCallIds` when several tools wrote)
 4. Stores ids of records read this generation in `metadata.referencedRecords`
-5. Appends **one** record to the store discovered by walking up from the first edited file (`dotprompts.json` / `.prompts/config.json`, else `<gitRoot>/.prompts`)
+5. Appends **one** record to the store discovered by walking up from the first edited file (`dotprompts.json` / `.prompts/config.json`, else `<gitRoot>/.prompts`). Outside a git repo, the store is not auto-created — run `/prompts init` (or `dot-prompts init`) first.
 
 Self-correction loops that touch the same file many times therefore produce a single provenance record, not one per tool call.
 
@@ -79,11 +79,16 @@ When the agent calls `prompts_read` or `prompts_trace` during a turn, those reco
 
 Asks the agent to load `.prompts` for that file and summarize intent for a human. The turn does not edit files, and auto-record is skipped so a summary does not become a provenance entry.
 
+## `/prompts init`
+
+Creates `dotprompts.json` and `.prompts/` at the session working directory. Needed only when the tree is not a git repository; git projects auto-create the store on first record.
+
 ## Troubleshooting
 
 | Issue | Cause | Fix |
 |---|---|---|
-| No records written | No user prompt, or the edit failed | Confirm pi completed the edit |
+| No records written | No user prompt, edit failed, or store not initialized outside git | Confirm the edit succeeded; in non-git trees run `/prompts init` |
+| Warning: run `/prompts init` | Session cwd is not inside a git repo and has no config | `/prompts init` or add `dotprompts.json` |
 | No `[dot-prompts]` notice | No matching history for the read range | Expected on files without records |
 | `prompts_trace` returns stored prompt text | Session file moved, deleted, or ephemeral | The `.prompts/` prompt is the portable layer |
 | Tool returns an internal-error message | Execute is wrapped; portable record text is returned when possible | `npm run build` and reload pi |

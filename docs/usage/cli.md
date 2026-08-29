@@ -20,7 +20,7 @@ When `--prompts-dir` is omitted, the store is resolved by walking up from a rele
 2. `.prompts/config.json` in the current directory
 3. Repeat on the parent directory
 4. Stop at a `.git` directory → use `<gitRoot>/.prompts`
-5. If the filesystem root is reached with no config and no `.git` → use `<cwd>/.prompts`
+5. If the filesystem root is reached with no config and no `.git` → use `<cwd>/.prompts` for discovery. **Recording** into that fallback does not auto-create the directory; run `dot-prompts init` (or `/prompts init` in pi) first. Git roots and config-backed stores still auto-create on first `record`.
 
 Minimal `dotprompts.json`:
 
@@ -34,6 +34,14 @@ Minimal `dotprompts.json`:
 ```
 
 Optional `storage.path` sets the store directory (relative to the config’s directory for `dotprompts.json`, or relative to the parent of `.prompts` for nested config).
+
+## `init`
+
+Create `dotprompts.json` and `.prompts/` in the current working directory so non-git trees can record without `--prompts-dir`.
+
+```bash
+dot-prompts init
+```
 
 ## `record`
 

@@ -1,8 +1,9 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { initStore } from "dot-prompts";
 
 export const HISTORY_COMMAND_MARKER = "[dot-prompts:history]";
 
-const USAGE = "Usage: /prompts history <file>";
+const USAGE = "Usage: /prompts history <file> | /prompts init";
 
 export function isHistorySummarizePrompt(prompt: string | null): boolean {
   return Boolean(prompt?.includes(HISTORY_COMMAND_MARKER));
@@ -24,16 +25,23 @@ Do not edit any files. This turn is for explanation only.`;
 export function registerPromptsCommands(pi: ExtensionAPI): void {
   pi.registerCommand("prompts", {
     description:
-      "dot-prompts: /prompts history <file> summarizes intent for a file",
+      "dot-prompts: /prompts history <file> | /prompts init",
     getArgumentCompletions: (prefix) => {
       if (prefix.includes(" ")) {
         return null;
       }
-      const item = {
-        value: "history ",
-        label: "history <file> — summarize provenance",
-      };
-      return item.value.startsWith(prefix.trim()) ? [item] : null;
+      const trimmed = prefix.trim();
+      const items = [
+        {
+          value: "history ",
+          label: "history <file> — summarize provenance",
+        },
+        {
+          value: "init",
+          label: "init — create store here (non-git trees)",
+        },
+      ];
+      return items.filter((item) => item.value.startsWith(trimmed));
     },
     handler: async (args, ctx) => {
       const parts = args.trim().split(/\s+/).filter(Boolean);
@@ -42,6 +50,25 @@ export function registerPromptsCommands(pi: ExtensionAPI): void {
 
       if (!subcommand) {
         ctx.ui.notify(USAGE, "info");
+        return;
+      }
+
+      if (subcommand === "init") {
+        if (parts.length > 1) {
+          ctx.ui.notify("Usage: /prompts init", "error");
+          return;
+        }
+        try {
+          const resolved = initStore({ cwd: ctx.cwd });
+          ctx.ui.notify(
+            `Initialized dot-prompts at ${resolved.rootDir} (store: ${resolved.promptsDir})`,
+            "info",
+          );
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : String(error);
+          ctx.ui.notify(`dot-prompts init failed: ${message}`, "error");
+        }
         return;
       }
 

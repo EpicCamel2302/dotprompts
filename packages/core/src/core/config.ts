@@ -1,9 +1,18 @@
-import { existsSync, readFileSync, statSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, isAbsolute, join, parse, resolve } from "node:path";
 import Ajv2020Module from "ajv/dist/2020.js";
 import { packageRoot } from "./package-root.js";
 import { PROMPTS_DIR_NAME, resolvePromptsDir } from "./prompts-dir.js";
 import { ValidationError } from "./validate.js";
+
+/** Same basename as storage HISTORY_FILE — kept local to avoid a config↔storage cycle. */
+const HISTORY_BASENAME = "history.jsonl";
 
 const Ajv2020 = Ajv2020Module.default;
 
@@ -18,11 +27,15 @@ export type DotPromptsConfig = {
   };
 };
 
+/** How findStore chose this location. */
+export type StoreSource = "explicit" | "config" | "git" | "fallback";
+
 export type ResolvedStore = {
   promptsDir: string;
   config: DotPromptsConfig | null;
   configPath: string | null;
   rootDir: string;
+  source: StoreSource;
 };
 
 export type FindStoreOptions = {
@@ -33,6 +46,30 @@ export type FindStoreOptions = {
   /** Explicit store override — skips discovery. */
   promptsDir?: string;
 };
+
+export type InitStoreOptions = {
+  /** Directory that receives `dotprompts.json` (defaults to cwd). */
+  cwd?: string;
+};
+
+/**
+ * Thrown when recording would create a store outside a git repo / config.
+ * Non-git trees must call {@link initStore} (or `/prompts init` in pi) first.
+ */
+export class StoreNotInitializedError extends Error {
+  readonly promptsDir: string;
+  readonly rootDir: string;
+
+  constructor(resolved: Pick<ResolvedStore, "promptsDir" | "rootDir">) {
+    super(
+      `No dot-prompts store initialized under ${resolved.rootDir}. ` +
+        `In a git repo the store is created automatically; otherwise run \`/prompts init\` (pi) or \`dot-prompts init\`.`,
+    );
+    this.name = "StoreNotInitializedError";
+    this.promptsDir = resolved.promptsDir;
+    this.rootDir = resolved.rootDir;
+  }
+}
 
 const configSchema = JSON.parse(
   readFileSync(join(packageRoot(), "schemas", "config.v1.json"), "utf8"),
@@ -115,6 +152,9 @@ function promptsDirFromNested(
  * At each directory: prefer `dotprompts.json`, then `.prompts/config.json`.
  * Stop at `.git` (use that directory's `.prompts`) or the filesystem root
  * (fall back to `<cwd>/.prompts`). Explicit `promptsDir` skips discovery.
+ *
+ * A `fallback` store is not auto-created on record — call {@link initStore}
+ * (or use a git repo / existing config) first. See {@link isStoreWritable}.
  */
 export function findStore(opts: FindStoreOptions = {}): ResolvedStore {
   const cwd = opts.cwd ?? process.cwd();
@@ -126,6 +166,7 @@ export function findStore(opts: FindStoreOptions = {}): ResolvedStore {
       config: null,
       configPath: null,
       rootDir: dirname(promptsDir),
+      source: "explicit",
     };
   }
 
@@ -142,6 +183,7 @@ export function findStore(opts: FindStoreOptions = {}): ResolvedStore {
         config,
         configPath: primaryPath,
         rootDir: dir,
+        source: "config",
       };
     }
 
@@ -155,6 +197,7 @@ export function findStore(opts: FindStoreOptions = {}): ResolvedStore {
         config,
         configPath: nestedPath,
         rootDir: dir,
+        source: "config",
       };
     }
 
@@ -166,6 +209,7 @@ export function findStore(opts: FindStoreOptions = {}): ResolvedStore {
         config,
         configPath: null,
         rootDir: dir,
+        source: "git",
       };
     }
 
@@ -177,11 +221,52 @@ export function findStore(opts: FindStoreOptions = {}): ResolvedStore {
         config,
         configPath: null,
         rootDir: fallbackRoot,
+        source: "fallback",
       };
     }
 
     dir = dirname(dir);
   }
+}
+
+/**
+ * Whether {@link record} may create/append at this store.
+ * Git roots and config-backed stores auto-create; bare cwd fallback does not
+ * until {@link initStore} (or an existing history file) is present.
+ */
+export function isStoreWritable(resolved: ResolvedStore): boolean {
+  if (resolved.source !== "fallback") {
+    return true;
+  }
+  return (
+    existsSync(join(resolved.promptsDir, HISTORY_BASENAME)) ||
+    existsSync(join(resolved.promptsDir, CONFIG_FILE_NESTED))
+  );
+}
+
+export function assertStoreWritable(resolved: ResolvedStore): void {
+  if (!isStoreWritable(resolved)) {
+    throw new StoreNotInitializedError(resolved);
+  }
+}
+
+/**
+ * Write `dotprompts.json` at `cwd` (and ensure `.prompts/` exists) so discovery
+ * treats the tree as initialized without requiring git.
+ */
+export function initStore(opts: InitStoreOptions = {}): ResolvedStore {
+  const rootDir = resolve(opts.cwd ?? process.cwd());
+  const primaryPath = join(rootDir, CONFIG_FILE_PRIMARY);
+  const nestedPath = join(rootDir, PROMPTS_DIR_NAME, CONFIG_FILE_NESTED);
+
+  if (existsSync(primaryPath) || existsSync(nestedPath)) {
+    return findStore({ cwd: rootDir });
+  }
+
+  const config = defaultConfig();
+  writeFileSync(primaryPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+  mkdirSync(join(rootDir, PROMPTS_DIR_NAME), { recursive: true });
+  return findStore({ cwd: rootDir });
 }
 
 /**

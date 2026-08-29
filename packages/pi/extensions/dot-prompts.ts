@@ -4,7 +4,7 @@
  * - Auto-records provenance once per agent generation (buffers edit/write, flushes on agent_end)
  * - Appends [dot-prompts] notices to read tool results
  * - Registers prompts_read, prompts_chain, and prompts_trace for opt-in context fetch
- * - Slash commands: /prompts history <file>
+ * - Slash commands: /prompts history <file>, /prompts init
  *
  * Usage: pi install npm:@dot-prompts/pi  (or pi -e ./packages/pi)
  */
@@ -24,6 +24,7 @@ import {
   handlePromptsRead,
   lookupForReadRange,
   record,
+  StoreNotInitializedError,
   type ToolParam,
 } from "dot-prompts";
 import { handlePromptsTrace } from "../dist/index.js";
@@ -44,6 +45,8 @@ const contentBeforeEdit = new Map<string, string>();
 const referencedRecordIds = new Set<string>();
 const generationBuffer = new GenerationRecordBuffer();
 let lastAgentCtx: Parameters<Parameters<ExtensionAPI["on"]>[1]>[1] | null = null;
+/** One notice per session when auto-record is skipped outside git without init. */
+let warnedStoreNotInitialized = false;
 
 function noteReferencedRecords(...ids: Array<string | undefined>): void {
   for (const id of ids) {
@@ -108,18 +111,32 @@ function flushGenerationRecord(
     return;
   }
   const lastTool = snap.tools[snap.tools.length - 1] ?? "edit";
-  record(
-    {
-      model: snap.model,
-      prompt: snap.prompt,
-      targets: snap.targets,
-      metadata: buildRecordMetadata(ctx, lastTool, snap.toolCallIds, snap.tools),
-    },
-    {
-      filePath: snap.firstFilePath,
-      cwd: ctx.cwd,
-    },
-  );
+  try {
+    record(
+      {
+        model: snap.model,
+        prompt: snap.prompt,
+        targets: snap.targets,
+        metadata: buildRecordMetadata(ctx, lastTool, snap.toolCallIds, snap.tools),
+      },
+      {
+        filePath: snap.firstFilePath,
+        cwd: ctx.cwd,
+      },
+    );
+  } catch (error) {
+    if (error instanceof StoreNotInitializedError) {
+      if (!warnedStoreNotInitialized) {
+        warnedStoreNotInitialized = true;
+        ctx.ui.notify(
+          `dot-prompts: no store yet (not a git repo). Run /prompts init to enable recording here.`,
+          "warning",
+        );
+      }
+      return;
+    }
+    throw error;
+  }
 }
 
 export function registerDotPromptsExtension(pi: ExtensionAPI): void {

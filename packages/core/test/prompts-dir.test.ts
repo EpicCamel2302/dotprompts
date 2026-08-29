@@ -10,7 +10,10 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   CONFIG_FILE_PRIMARY,
   findStore,
+  initStore,
+  isStoreWritable,
   resolvePromptsDirFromCli,
+  StoreNotInitializedError,
   validateConfig,
 } from "../src/core/config.js";
 import { PROMPTS_DIR_NAME, resolvePromptsDir } from "../src/core/prompts-dir.js";
@@ -166,6 +169,18 @@ describe("findStore", () => {
     expect(resolved.promptsDir).toBe(join(root, PROMPTS_DIR_NAME));
     expect(resolved.configPath).toBeNull();
     expect(resolved.rootDir).toBe(root);
+    expect(resolved.source).toBe("git");
+  });
+
+  it("marks cwd fallback when there is no git or config", () => {
+    const nested = join(root, "src");
+    mkdirSync(nested, { recursive: true });
+    const resolved = findStore({
+      filePath: join(nested, "file.ts"),
+      cwd: root,
+    });
+    expect(resolved.source).toBe("fallback");
+    expect(resolved.promptsDir).toBe(join(root, PROMPTS_DIR_NAME));
   });
 
   it("honors storage.path on dotprompts.json", () => {
@@ -218,6 +233,68 @@ describe("findStore", () => {
     const history = join(pkg, PROMPTS_DIR_NAME, HISTORY_FILE);
     expect(existsSync(history)).toBe(true);
     expect(readFileSync(history, "utf8")).toContain("add x");
+  });
+});
+
+describe("initStore / record gate", () => {
+  let root: string;
+
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), "dot-prompts-init-"));
+  });
+
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it("refuses to record into an uninitialized non-git fallback", () => {
+    const filePath = join(root, "a.ts");
+    writeFileSync(filePath, "export {};\n", "utf8");
+    expect(isStoreWritable(findStore({ cwd: root, filePath }))).toBe(false);
+    expect(() =>
+      record(
+        {
+          model: "test",
+          prompt: "nope",
+          targets: [{ path: "a.ts", links: [{ type: "file" }] }],
+        },
+        { cwd: root, filePath },
+      ),
+    ).toThrow(StoreNotInitializedError);
+    expect(existsSync(join(root, PROMPTS_DIR_NAME))).toBe(false);
+  });
+
+  it("records after initStore without git", () => {
+    const resolved = initStore({ cwd: root });
+    expect(resolved.source).toBe("config");
+    expect(existsSync(join(root, CONFIG_FILE_PRIMARY))).toBe(true);
+
+    const filePath = join(root, "a.ts");
+    writeFileSync(filePath, "export {};\n", "utf8");
+    record(
+      {
+        model: "test",
+        prompt: "after init",
+        targets: [{ path: "a.ts", links: [{ type: "file" }] }],
+      },
+      { cwd: root, filePath },
+    );
+    expect(existsSync(join(root, PROMPTS_DIR_NAME, HISTORY_FILE))).toBe(true);
+  });
+
+  it("auto-creates under a git root without prior init", () => {
+    mkdirSync(join(root, ".git"));
+    const filePath = join(root, "a.ts");
+    writeFileSync(filePath, "export {};\n", "utf8");
+    record(
+      {
+        model: "test",
+        prompt: "git ok",
+        targets: [{ path: "a.ts", links: [{ type: "file" }] }],
+      },
+      { cwd: root, filePath },
+    );
+    expect(existsSync(join(root, PROMPTS_DIR_NAME, HISTORY_FILE))).toBe(true);
   });
 });
 

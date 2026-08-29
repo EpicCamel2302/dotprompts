@@ -63,10 +63,17 @@ export function createFakePi(opts: FakePiOptions) {
       ],
   };
 
+  const ui = {
+    notify(message: string, level?: string) {
+      notifications.push({ message, level });
+    },
+  };
+
   const ctx = {
     cwd: opts.cwd,
     sessionManager,
     model: { provider: "test", id: "model" },
+    ui,
   };
 
   const api = {
@@ -106,11 +113,8 @@ export function createFakePi(opts: FakePiOptions) {
 
   function commandCtx() {
     return {
-      ui: {
-        notify(message: string, level?: string) {
-          notifications.push({ message, level });
-        },
-      },
+      cwd: opts.cwd,
+      ui,
     };
   }
 
