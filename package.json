@@ -14,7 +14,7 @@
     "dev": "npm run dev -w dot-prompts"
   },
   "devDependencies": {
-    "@types/node": "^22.13.10",
+    "@types/node": "^26.4.0",
     "typescript": "^5.8.2",
     "vitest": "^4.1.10"
   },
