@@ -42,7 +42,7 @@
     "@sinclair/typebox": "*"
   },
   "devDependencies": {
-    "@earendil-works/pi-coding-agent": "^0.84.2",
+    "@earendil-works/pi-coding-agent": "^0.87.1",
     "@sinclair/typebox": "^0.34.30",
     "@types/node": "^22.13.10",
     "typescript": "^5.8.2"
